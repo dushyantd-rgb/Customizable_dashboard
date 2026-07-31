@@ -1,0 +1,75 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    environment:
+      APP_ENV: development
+      APP_NAME: ${APP_NAME:-growthbyte-reporting}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8000:8000"
+
+  mcp:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/mcp.Dockerfile
+    environment:
+      APP_NAME: ${APP_NAME:-growthbyte-reporting}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      MCP_HOST: 0.0.0.0
+      MCP_PATH: /mcp
+      MCP_PORT: 8001
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8001:8001"
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+      target: development
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    ports:
+      - "3000:3000"

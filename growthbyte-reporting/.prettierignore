@@ -1,0 +1,9 @@
+docs/phase-0/**
+GrowthByte_Reporting_Platform_TRD.md
+**/.next/**
+**/.venv/**
+**/coverage/**
+**/dist/**
+**/node_modules/**
+pnpm-lock.yaml
+**/poetry.lock

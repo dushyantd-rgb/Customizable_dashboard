@@ -1,0 +1,77 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.env.local
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+secrets*.json
+*.tfstate
+*.tfstate.*
+
+# Node.js / package managers
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js and frontend builds
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+coverage/
+playwright-report/
+test-results/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Test, cache, and temporary output
+.cache/
+.nyc_output/
+*.log
+tmp/
+temp/
+*.tmp
+
+# IDE and operating-system files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local database/runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+.supabase/
+
+# Local tooling
+.tooling/

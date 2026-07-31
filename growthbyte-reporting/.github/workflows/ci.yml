@@ -1,0 +1,111 @@
+name: Validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.31.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check Prettier formatting
+        run: pnpm exec prettier --check .
+
+      - name: Lint frontend and shared packages
+        run: pnpm turbo lint --filter=@growthbyte/web...
+
+      - name: Test frontend
+        run: pnpm --filter @growthbyte/web test
+
+      - name: Type-check frontend and shared packages
+        run: pnpm turbo typecheck --filter=@growthbyte/web...
+
+      - name: Build frontend and shared packages
+        run: pnpm turbo build --filter=@growthbyte/web...
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+  api:
+    name: API validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Poetry
+        run: python -m pip install poetry==2.2.1
+
+      - name: Install API dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Check API formatting
+        run: poetry run ruff format --check .
+
+      - name: Lint API
+        run: poetry run ruff check .
+
+      - name: Test API
+        run: poetry run pytest
+
+  mcp:
+    name: MCP validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mcp
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Poetry
+        run: python -m pip install poetry==2.2.1
+
+      - name: Install MCP dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Check MCP formatting
+        run: poetry run ruff format --check .
+
+      - name: Lint MCP
+        run: poetry run ruff check .
+
+      - name: Test MCP
+        run: poetry run pytest

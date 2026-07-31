@@ -1,0 +1,1 @@
+"""GrowthByte Reporting MCP package."""

@@ -1,0 +1,14 @@
+{
+  "name": "@growthbyte/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "poetry run python -m compileall -q app",
+    "dev": "poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001",
+    "format": "poetry run ruff format .",
+    "format:check": "poetry run ruff format --check .",
+    "lint": "poetry run ruff check .",
+    "test": "poetry run pytest",
+    "typecheck": "poetry check --lock"
+  }
+}
