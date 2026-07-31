@@ -12,6 +12,9 @@ jobs:
   frontend:
     name: Frontend validation
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: growthbyte-reporting
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -26,6 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: growthbyte-reporting/pnpm-lock.yaml
 
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
@@ -53,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/api
+        working-directory: growthbyte-reporting/apps/api
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -63,6 +67,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: growthbyte-reporting/apps/api/poetry.lock
 
       - name: Install Poetry
         run: python -m pip install poetry==2.2.1
@@ -84,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/mcp
+        working-directory: growthbyte-reporting/apps/mcp
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -94,6 +99,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: growthbyte-reporting/apps/mcp/poetry.lock
 
       - name: Install Poetry
         run: python -m pip install poetry==2.2.1

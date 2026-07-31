@@ -26,32 +26,33 @@ The Phase 1 brief's confirmed MVP rules supersede the older authentication and R
 ## Project structure
 
 ```text
-growthbyte-reporting/
-  apps/
-    web/
-    api/
-    mcp/
-  packages/
-    ui/
-    shared-types/
-    report-schema/
-    config/
-  database/
-    migrations/
-    policies/
-    seed/
-  infrastructure/
-    docker/
-    helm/
-    github-actions/
-  docs/
-    phase-0/
-    phase-1/
-  .github/workflows/ci.yml
-  docker-compose.yml
-  package.json
-  pnpm-workspace.yaml
-  turbo.json
+customizable dashboard/              # Git repository root
+  .github/workflows/ci.yml           # GitHub-discovered validation workflow
+  growthbyte-reporting/              # Project and command root
+    apps/
+      web/
+      api/
+      mcp/
+    packages/
+      ui/
+      shared-types/
+      report-schema/
+      config/
+    database/
+      migrations/
+      policies/
+      seed/
+    infrastructure/
+      docker/
+      helm/
+      github-actions/
+    docs/
+      phase-0/
+      phase-1/
+    docker-compose.yml
+    package.json
+    pnpm-workspace.yaml
+    turbo.json
 ```
 
 ## Prerequisites

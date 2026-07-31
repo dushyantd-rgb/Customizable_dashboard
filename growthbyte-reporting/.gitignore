@@ -29,6 +29,7 @@ pnpm-debug.log*
 out/
 dist/
 build/
+*.tsbuildinfo
 .turbo/
 .vercel/
 coverage/
