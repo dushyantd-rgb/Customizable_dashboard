@@ -1,0 +1,1 @@
+"""Client-scoped reporting repositories."""

@@ -1,6 +1,6 @@
 # Phase 2 database schema design
 
-Status: **structural schema implemented; contract-dependent values and live database application remain blocked**.
+Status: **structural schema implemented; contract-dependent values and production application remain blocked**.
 
 ## Scope and evidence
 
@@ -12,13 +12,14 @@ No API endpoint, Supabase application client, knowledge importer, OAuth flow, UI
 
 ## Migration order
 
-| Migration                                         | Objects introduced                                                                                  |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `20260801000000_empty_baseline.sql`               | Phase 1 no-op baseline                                                                              |
-| `20260801010000_create_client_core.sql`           | `pgcrypto`, updated-time trigger function, `clients`, `client_knowledge`, `client_kpis`             |
-| `20260801020000_create_integration_config.sql`    | `integration_connections`, `google_sheet_configs`, `field_mappings`, `status_mappings`              |
-| `20260801030000_create_sync_and_leads.sql`        | `sync_runs`, `raw_sheet_rows`, `lead_records`, `lead_matches`                                       |
-| `20260801040000_create_metrics_reports_audit.sql` | `metric_snapshots`, `reports`, `report_versions`, `report_version_metric_snapshots`, `audit_events` |
+| Migration                                                         | Objects introduced                                                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `20260801000000_empty_baseline.sql`                               | Phase 1 no-op baseline                                                                              |
+| `20260801010000_create_client_core.sql`                           | `pgcrypto`, updated-time trigger function, `clients`, `client_knowledge`, `client_kpis`             |
+| `20260801020000_create_integration_config.sql`                    | `integration_connections`, `google_sheet_configs`, `field_mappings`, `status_mappings`              |
+| `20260801030000_create_sync_and_leads.sql`                        | `sync_runs`, `raw_sheet_rows`, `lead_records`, `lead_matches`                                       |
+| `20260801040000_create_metrics_reports_audit.sql`                 | `metric_snapshots`, `reports`, `report_versions`, `report_version_metric_snapshots`, `audit_events` |
+| `20260801050000_replace_client_knowledge_source_unique_index.sql` | Replace the partial knowledge source-identity index with an inferable unique constraint             |
 
 The requested 15 logical tables are present. `report_version_metric_snapshots` is a supporting association table that normalizes the canonical report version's metric-snapshot array into enforceable same-client foreign keys.
 
@@ -62,6 +63,7 @@ Internal identities use PostgreSQL UUID primary keys with `gen_random_uuid()`. P
 
 - UUID primary keys on all logical entities; a UUID composite primary key on the report/snapshot association.
 - Unique client-scoped source identities for knowledge versions, integration source accounts, Sheet tabs, mapping versions, raw rows per sync, and report versions.
+- `client_knowledge` uses a non-partial unique constraint on `(client_id, source_type, source_identifier, source_version)`. This makes the four columns an atomic PostgreSQL/PostgREST conflict target while retaining normal PostgreSQL null semantics for manual or unresolved records. The replacement migration locks the table and aborts before DDL when duplicate fully populated identities exist; it never deduplicates or edits rows.
 - A partial unique index permits only one active `lead_matches` row per client/lead.
 - An expression-based unique index prevents duplicate metric snapshots with identical client, metric, period, attribution scope, entity, formula version, and input cutoff.
 - Client-leading lookup indexes cover every client-owned table, with period/status/source indexes for expected ingestion and reporting access paths.
@@ -74,19 +76,21 @@ No Phase 0 status vocabulary is approved. In particular, the six lead statuses, 
 
 ## Credentials and environment integration
 
-The local `.env` was inspected by key name and set/empty state only; no value was printed or copied. It contains the reporting Supabase URL, publishable key, secret key, JWKS URL, and knowledge-base URL. `.env.example` now documents those names with placeholders.
+The local `.env` was inspected by key name and set/empty state only; no value was printed or copied. The two required reporting variable names are absent, while both required knowledge variable names are present. The configured knowledge URL is a direct PostgreSQL URI rather than the HTTP(S) project URL required by the REST adapter. `.env.example` documents the four exact backend names with placeholders.
 
-The schema does not consume Supabase API keys. PostgreSQL DDL requires `DATABASE_DIRECT_URL`, which is not present in the local `.env`. The Supabase knowledge URL is documented as read-only discovery configuration only; there is no knowledge runtime connection, query, import, copy, or write in Phase 2. Credentials remain local/backend-only and outside every business table.
+The schema migrations do not consume Supabase API keys. PostgreSQL DDL requires `DATABASE_DIRECT_URL`, which is not present in the local `.env`. The separate Phase 2 knowledge-import layer uses a GET-only knowledge adapter and a controlled reporting upsert; credentials remain local/backend-only and outside every business table. No real import or knowledge-source write has occurred.
 
 ## Validation and blockers
 
 `database/validate-migrations.ps1` validates lexical order, transaction wrappers, table presence, UUID keys, non-null client scope, foreign-key creation order, client-leading indexes, and forbidden auth/credential/PII/seed patterns. With an explicitly supplied empty test database and `psql`, the same command can invoke the existing migration runner using `-ApplyDatabase`.
 
+The complete migration chain, including the source-identity constraint replacement, was applied to a disposable PostgreSQL 17 Docker database. The pre-replacement duplicate count was zero. Rolled-back fixtures verified rejection of fully populated duplicate identities, acceptance of repeated null identifier/version values, inference of the four-column `ON CONFLICT` target, and safe migration re-entry. No production database was contacted.
+
 Current blockers are:
 
 1. `PROJECT_HANDOFF.md` is missing, so any additional handoff decisions cannot be verified.
-2. `DATABASE_DIRECT_URL`, `psql`, and the Supabase CLI are unavailable locally, so empty-database application and server-side PostgreSQL syntax validation cannot yet run.
-3. The knowledge source selection, field scope, provenance acceptance, PII/retention rules, and import validation remain unapproved. No knowledge data is copied.
+2. `DATABASE_DIRECT_URL` is unavailable on the host. Disposable Docker validation passed, but production duplicate inspection and migration application require separately approved production access.
+3. Structured knowledge sections now have a documented controlled mapping. The free-form item subset, status taxonomy, history/documents/review records, and their PII/retention rules remain unapproved. No real knowledge data was copied.
 4. Pilot Sheet samples, canonical field allowlist, status mappings, duplicate/funnel rules, and attribution evidence remain unapproved. No proposed enum or contact-data storage is frozen.
 5. KPI unit/direction/attribution catalogs and metric/report workflow/quality statuses remain unapproved. They remain non-empty text until a later migration records approved values.
 6. Meta dimension tables are outside the requested list, so `lead_matches` and `metric_snapshots` keep provider-scoped external identifiers rather than inventing foreign keys to missing entities.

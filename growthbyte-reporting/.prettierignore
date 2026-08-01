@@ -1,7 +1,10 @@
 docs/phase-0/**
 GrowthByte_Reporting_Platform_TRD.md
 **/.next/**
+**/.pytest_cache/**
+**/.ruff_cache/**
 **/.venv/**
+**/__pycache__/**
 **/coverage/**
 **/dist/**
 **/node_modules/**

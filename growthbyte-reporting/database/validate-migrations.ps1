@@ -124,6 +124,46 @@ foreach ($foreignKey in $requiredSameClientForeignKeys) {
     }
 }
 
+$knowledgeConstraintMigration = $migrations | Where-Object {
+    $_.Name -eq "20260801050000_replace_client_knowledge_source_unique_index.sql"
+}
+
+if (-not $knowledgeConstraintMigration) {
+    $errors.Add("Missing client-knowledge source-identity constraint migration.")
+}
+else {
+    $knowledgeConstraintSql = Get-Content -LiteralPath $knowledgeConstraintMigration.FullName -Raw
+    $knowledgeConstraintPattern = @'
+(?is)alter\s+table\s+public\.client_knowledge\s+add\s+constraint\s+client_knowledge_source_version_unique\s+unique\s*\(\s*client_id\s*,\s*source_type\s*,\s*source_identifier\s*,\s*source_version\s*\)
+'@
+
+    if ($knowledgeConstraintSql -notmatch $knowledgeConstraintPattern.Trim()) {
+        $errors.Add("Client-knowledge source identity is not a four-column unique constraint.")
+    }
+
+    if ($knowledgeConstraintSql -notmatch '(?is)drop\s+index\s+if\s+exists\s+public\.client_knowledge_source_version_unique\s*;') {
+        $errors.Add("Client-knowledge partial source-identity index is not dropped.")
+    }
+
+    if ($knowledgeConstraintSql -match '(?is)add\s+constraint\s+client_knowledge_source_version_unique.*?where\s+source_identifier') {
+        $errors.Add("Client-knowledge source-identity constraint must not be partial.")
+    }
+}
+
+$clientKnowledgeCreate = [regex]::Match(
+    $combinedSql,
+    '(?is)create\s+table\s+if\s+not\s+exists\s+public\.client_knowledge\s*\((.*?)\n\);'
+)
+if ($clientKnowledgeCreate.Success) {
+    $clientKnowledgeBody = $clientKnowledgeCreate.Groups[1].Value
+    if ($clientKnowledgeBody -match '(?im)^\s*source_identifier\s+text\s+not\s+null\b') {
+        $errors.Add("client_knowledge.source_identifier must remain nullable.")
+    }
+    if ($clientKnowledgeBody -match '(?im)^\s*source_version\s+text\s+not\s+null\b') {
+        $errors.Add("client_knowledge.source_version must remain nullable.")
+    }
+}
+
 $forbiddenSchemaPatterns = @(
     '(?im)^\s*create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?(users|profiles|memberships|roles)\b',
     '(?im)^\s*create\s+policy\b',

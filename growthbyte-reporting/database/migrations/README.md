@@ -16,10 +16,13 @@ Never edit an applied migration. Add a later migration for every correction. Pha
 2. `20260801020000_create_integration_config.sql`
 3. `20260801030000_create_sync_and_leads.sql`
 4. `20260801040000_create_metrics_reports_audit.sql`
+5. `20260801050000_replace_client_knowledge_source_unique_index.sql`
 
 Each Phase 2 file is transaction-wrapped and uses idempotent table, index, extension, function, and trigger operations so the existing lexical runner can safely encounter it again. Applied migrations remain immutable even though re-entry is non-destructive.
 
 The status vocabularies proposed in Phase 0 were not approved. These migrations therefore require non-empty status text without freezing proposed enum values. Add enum or value checks only in a later migration after approval.
+
+The initial client-knowledge source-identity index was partial. Phase 2 replaces it with a non-partial unique constraint on `(client_id, source_type, source_identifier, source_version)` so PostgreSQL/PostgREST can infer the conflict target for atomic imports. `source_identifier` and `source_version` remain nullable, and PostgreSQL continues to permit multiple rows containing null in either column. The replacement migration checks for duplicate fully populated identities and stops without changing data when any are present.
 
 ## Apply locally
 
