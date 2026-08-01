@@ -39,24 +39,10 @@ export function SuperKReportGenerator({ clientId }: Readonly<{ clientId: string 
     setAgentThinking("Initializing AI agent...");
 
     try {
-      // Simulate AI agent thinking process
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Fast AI agent thinking process with instant transitions
       setAgentThinking(`Analyzing ${VERTICAL_CONFIG[selectedVertical].name} data...`);
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setAgentThinking("Fetching Meta Ads insights...");
-
-      await new Promise(resolve => setTimeout(resolve, 600));
-      setAgentThinking("Calculating vertical-specific metrics...");
-
-      await new Promise(resolve => setTimeout(resolve, 700));
-      setAgentThinking("Generating AI-powered recommendations...");
-
       const response = await api.generateSuperKFranchiseReport(clientId, selectedVertical);
-
       setAgentThinking("Finalizing report...");
-      await new Promise(resolve => setTimeout(resolve, 400));
-
       setReport(response);
     } catch (generationError) {
       setError(safeErrorMessage(generationError));
