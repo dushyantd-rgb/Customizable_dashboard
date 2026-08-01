@@ -26,20 +26,32 @@ def _lifespan() -> object:
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         owned_clients: list[SupabaseReadClient] = []
         application_settings: Settings = application.state.settings
+
+        logger.info(f"Checking Supabase config: reporting={application_settings.reporting_supabase.configured}, knowledge={application_settings.knowledge_supabase.configured}")
+
         if (
             application.state.reporting_supabase_client is None
             and application_settings.reporting_supabase.configured
         ):
-            client = create_reporting_supabase_client(application_settings.reporting_supabase)
-            application.state.reporting_supabase_client = client
-            owned_clients.append(client)
+            try:
+                client = create_reporting_supabase_client(application_settings.reporting_supabase)
+                application.state.reporting_supabase_client = client
+                owned_clients.append(client)
+                logger.info("Reporting Supabase client created successfully")
+            except Exception as e:
+                logger.error(f"Failed to create reporting Supabase client: {e}")
+
         if (
             application.state.knowledge_supabase_client is None
             and application_settings.knowledge_supabase.configured
         ):
-            client = create_knowledge_supabase_client(application_settings.knowledge_supabase)
-            application.state.knowledge_supabase_client = client
-            owned_clients.append(client)
+            try:
+                client = create_knowledge_supabase_client(application_settings.knowledge_supabase)
+                application.state.knowledge_supabase_client = client
+                owned_clients.append(client)
+                logger.info("Knowledge Supabase client created successfully")
+            except Exception as e:
+                logger.error(f"Failed to create knowledge Supabase client: {e}")
 
         logger.info("API service starting")
         try:

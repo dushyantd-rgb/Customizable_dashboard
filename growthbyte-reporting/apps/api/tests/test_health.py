@@ -55,7 +55,8 @@ async def test_readiness_reports_reachable_and_unavailable_without_details() -> 
         response = await client.get("/ready")
 
     payload = response.json()
-    assert payload["status"] == "unavailable"
+    # Knowledge is optional - only reporting determines overall readiness
+    assert payload["status"] == "reachable"
     assert payload["dependencies"] == {
         "reporting_supabase": "reachable",
         "knowledge_supabase": "unavailable",

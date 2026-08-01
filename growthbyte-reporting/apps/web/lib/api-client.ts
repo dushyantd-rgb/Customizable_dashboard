@@ -210,4 +210,37 @@ export const api = {
     }),
   listGoogleSyncRuns: (clientId: string) =>
     apiRequest<SyncRunSummary[]>(`${googlePath(clientId)}/sync-runs`),
+  // Matching endpoints
+  runNormalisation: (clientId: string, syncRunId?: string) =>
+    apiRequest<{ normalised: number; skipped: number }>(
+      `/matching/normalise?client_id=${encodeURIComponent(clientId)}`,
+      { method: "POST", body: JSON.stringify({ sync_run_id: syncRunId }) }
+    ),
+  runMatching: (clientId: string) =>
+    apiRequest<{ matched: number; ambiguous: number; unmatched: number }>(
+      `/matching/match?client_id=${encodeURIComponent(clientId)}`,
+      { method: "POST", body: JSON.stringify({}) }
+    ),
+  listUnmatchedLeads: (clientId: string, limit = 100) =>
+    apiRequest<unknown[]>(`/matching/leads/unmatched?client_id=${encodeURIComponent(clientId)}&limit=${limit}`),
+  listAmbiguousLeads: (clientId: string, limit = 100) =>
+    apiRequest<unknown[]>(`/matching/leads/ambiguous?client_id=${encodeURIComponent(clientId)}&limit=${limit}`),
+  // Metrics endpoints
+  getMetrics: (clientId: string, periodStart: string, periodEnd: string, attributionLevel = "client") =>
+    apiRequest<unknown>(
+      `/metrics?client_id=${encodeURIComponent(clientId)}&period_start=${periodStart}&period_end=${periodEnd}&attribution_level=${attributionLevel}`
+    ),
+  generateSnapshot: (clientId: string, periodStart: string, periodEnd: string, attributionLevels = ["client"]) =>
+    apiRequest<{ snapshot_count: number; snapshots: string[] }>(
+      `/metrics/snapshots?client_id=${encodeURIComponent(clientId)}`,
+      { method: "POST", body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, attribution_levels: attributionLevels }) }
+    ),
+  listSnapshots: (clientId: string, periodStart?: string, periodEnd?: string) => {
+    const params = new URLSearchParams({ client_id: clientId });
+    if (periodStart) params.append("period_start", periodStart);
+    if (periodEnd) params.append("period_end", periodEnd);
+    return apiRequest<unknown[]>(`/metrics/snapshots?${params.toString()}`);
+  },
+  getSnapshot: (clientId: string, snapshotId: string) =>
+    apiRequest<unknown>(`/metrics/snapshots/${encodeURIComponent(snapshotId)}?client_id=${encodeURIComponent(clientId)}`),
 };

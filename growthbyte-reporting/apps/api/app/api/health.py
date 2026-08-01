@@ -36,7 +36,8 @@ async def ready(request: Request) -> ReadinessResponse:
         reporting_supabase=reporting_state,
         knowledge_supabase=knowledge_state,
     )
-    overall_state = _overall_state(reporting_state, knowledge_state)
+    # Knowledge is optional - only reporting determines overall readiness
+    overall_state = _overall_state_required(reporting_state)
     return ReadinessResponse(
         status=overall_state,
         version=settings.app_version,
@@ -56,11 +57,6 @@ async def _dependency_state(*, configured: bool, client: Any | None, table: str)
     return "reachable"
 
 
-def _overall_state(*states: DependencyState) -> DependencyState:
-    if all(state == "reachable" for state in states):
-        return "reachable"
-    if "unavailable" in states:
-        return "unavailable"
-    if "not_configured" in states:
-        return "not_configured"
-    return "configured"
+def _overall_state_required(state: DependencyState) -> DependencyState:
+    """Determine overall state based on required reporting database only."""
+    return state

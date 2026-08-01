@@ -76,3 +76,7 @@ desktop.ini
 
 # Local tooling
 .tooling/
+
+# Claude Code agent artifacts
+.agents/
+skills-lock.json

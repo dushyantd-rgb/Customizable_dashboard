@@ -13,6 +13,10 @@ def get_reporting_client(request: Request) -> ReportingSupabaseClientProtocol:
     return cast(ReportingSupabaseClientProtocol, client)
 
 
+# Alias for backwards compatibility
+get_supabase_client = get_reporting_client
+
+
 ReportingClientDependency = Annotated[
     ReportingSupabaseClientProtocol,
     Depends(get_reporting_client),
