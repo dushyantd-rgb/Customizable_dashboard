@@ -26,6 +26,7 @@ pnpm-debug.log*
 
 # Next.js and frontend builds
 .next/
+*.tsbuildinfo
 out/
 dist/
 build/

@@ -5,6 +5,7 @@ from typing import Any, Literal, NoReturn, Protocol
 import httpx
 
 from app.core.config import SupabaseConnectionSettings
+from app.core.errors import ReportingWriteConflictError
 from app.knowledge.errors import (
     PlaceholderCredentialsError,
     ReportingDatabaseUnavailableError,
@@ -14,7 +15,7 @@ from app.knowledge.errors import (
 
 _IDENTIFIER_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
 
-REPORTING_TABLES = frozenset({"clients", "client_knowledge"})
+REPORTING_TABLES = frozenset({"clients", "client_knowledge", "client_kpis"})
 KNOWLEDGE_SOURCE_TABLES = frozenset(
     {
         "org_clients",
@@ -40,6 +41,21 @@ class SupabaseReadClient(Protocol):
 
 
 class ReportingSupabaseClientProtocol(SupabaseReadClient, Protocol):
+    async def insert(
+        self,
+        *,
+        table: str,
+        row: Mapping[str, Any],
+    ) -> dict[str, Any]: ...
+
+    async def update(
+        self,
+        *,
+        table: str,
+        values: Mapping[str, Any],
+        filters: Mapping[str, str],
+    ) -> list[dict[str, Any]]: ...
+
     async def upsert(
         self,
         *,
@@ -127,6 +143,33 @@ class _SupabaseRestClient:
 
 
 class ReportingSupabaseClient(_SupabaseRestClient):
+    async def insert(
+        self,
+        *,
+        table: str,
+        row: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        self._validate_identifiers(tuple(row))
+        response = await self._write(table=table, rows=(row,), filters={})
+        decoded_rows = self._decode_rows(response)
+        if len(decoded_rows) != 1:
+            raise ReportingDatabaseUnavailableError
+        return decoded_rows[0]
+
+    async def update(
+        self,
+        *,
+        table: str,
+        values: Mapping[str, Any],
+        filters: Mapping[str, str],
+    ) -> list[dict[str, Any]]:
+        if not values or not filters:
+            raise ValueError("Reporting updates require values and explicit filters")
+        self._validate_identifiers(tuple(values))
+        self._validate_identifiers(tuple(filters))
+        response = await self._write(table=table, rows=(values,), filters=filters, patch=True)
+        return self._decode_rows(response)
+
     async def upsert(
         self,
         *,
@@ -137,6 +180,8 @@ class ReportingSupabaseClient(_SupabaseRestClient):
         self._validate_identifiers(on_conflict)
         if not rows:
             return []
+        for row in rows:
+            self._validate_identifiers(tuple(row))
         self._validate_table(table)
         try:
             response = await self._http_client.post(
@@ -152,6 +197,40 @@ class ReportingSupabaseClient(_SupabaseRestClient):
         if response.status_code >= 400:
             self._raise_unavailable()
         return self._decode_rows(response)
+
+    async def _write(
+        self,
+        *,
+        table: str,
+        rows: Sequence[Mapping[str, Any]],
+        filters: Mapping[str, str],
+        patch: bool = False,
+    ) -> httpx.Response:
+        self._validate_table(table)
+        params = [(column, f"eq.{value}") for column, value in filters.items()]
+        payload: Any = dict(rows[0]) if patch else list(rows)
+        try:
+            if patch:
+                response = await self._http_client.patch(
+                    f"/{table}",
+                    params=params,
+                    json=payload,
+                    headers={"Prefer": "return=representation"},
+                )
+            else:
+                response = await self._http_client.post(
+                    f"/{table}",
+                    params=params,
+                    json=payload,
+                    headers={"Prefer": "return=representation"},
+                )
+        except (httpx.TimeoutException, httpx.TransportError) as error:
+            self._raise_unavailable(error)
+        if response.status_code == 409:
+            raise ReportingWriteConflictError
+        if response.status_code >= 400:
+            self._raise_unavailable()
+        return response
 
 
 class ReadOnlyKnowledgeSupabaseClient(_SupabaseRestClient):

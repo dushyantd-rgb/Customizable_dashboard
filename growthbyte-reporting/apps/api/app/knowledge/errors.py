@@ -1,4 +1,7 @@
-class KnowledgeImportError(Exception):
+from app.core.errors import SafeApplicationError
+
+
+class KnowledgeImportError(SafeApplicationError):
     """Base error with a caller-safe code and message."""
 
     code = "knowledge_import_error"
@@ -11,6 +14,7 @@ class KnowledgeImportError(Exception):
 class PlaceholderCredentialsError(KnowledgeImportError):
     code = "supabase_not_configured"
     safe_message = "Required Supabase configuration is not available"
+    status_code = 503
 
 
 class InvalidClientIdError(KnowledgeImportError):
@@ -26,16 +30,19 @@ class InvalidSourceClientIdentifierError(KnowledgeImportError):
 class MissingTargetClientError(KnowledgeImportError):
     code = "missing_target_client"
     safe_message = "The target reporting client does not exist"
+    status_code = 404
 
 
 class MissingSourceClientError(KnowledgeImportError):
     code = "missing_source_client"
     safe_message = "The source client does not exist"
+    status_code = 404
 
 
 class DuplicateSourceClientError(KnowledgeImportError):
     code = "duplicate_source_client"
     safe_message = "The source client identifier is not unique"
+    status_code = 409
 
 
 class MissingKnowledgeFieldsError(KnowledgeImportError):
@@ -51,11 +58,13 @@ class SourceVersionUnavailableError(KnowledgeImportError):
 class SourceDatabaseUnavailableError(KnowledgeImportError):
     code = "knowledge_database_unavailable"
     safe_message = "The knowledge source is unavailable"
+    status_code = 503
 
 
 class ReportingDatabaseUnavailableError(KnowledgeImportError):
     code = "reporting_database_unavailable"
     safe_message = "The reporting database is unavailable"
+    status_code = 503
 
 
 class MappingValidationError(KnowledgeImportError):
@@ -71,6 +80,7 @@ class ApplyConfirmationError(KnowledgeImportError):
 class UpsertConflictError(KnowledgeImportError):
     code = "knowledge_upsert_conflict"
     safe_message = "The reporting database rejected the knowledge upsert"
+    status_code = 409
 
 
 class PartialImportError(KnowledgeImportError):

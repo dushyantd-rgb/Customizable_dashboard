@@ -24,3 +24,17 @@ body {
 a {
   color: inherit;
 }
+
+@layer components {
+  .form-input {
+    @apply w-full border border-growthbyte-black bg-growthbyte-white px-3 py-2 font-normal outline-none focus:ring-2 focus:ring-growthbyte-teal disabled:cursor-not-allowed disabled:bg-growthbyte-black/5;
+  }
+
+  .primary-button {
+    @apply border border-growthbyte-black bg-growthbyte-black px-4 py-2 font-medium text-growthbyte-white hover:bg-growthbyte-teal disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .secondary-button {
+    @apply border border-growthbyte-black bg-growthbyte-white px-4 py-2 font-medium text-growthbyte-black hover:bg-growthbyte-black hover:text-growthbyte-white disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}

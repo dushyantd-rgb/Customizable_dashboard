@@ -71,7 +71,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=[resolved_settings.web_url.rstrip("/")],
         allow_credentials=False,
-        allow_methods=["GET", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
     application.include_router(health_router)

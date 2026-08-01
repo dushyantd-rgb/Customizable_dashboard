@@ -8,7 +8,10 @@ This design implements only the Phase 2 database foundation requested for the st
 
 `PROJECT_HANDOFF.md` is not present in the repository or project directory, so it could not be reviewed. Phase 0 also marks the canonical schema, status mappings, metric semantics, lead attribution details, and knowledge migration scope as proposed or blocked rather than approved. The migrations therefore establish relational boundaries and lineage without inventing those unresolved business values.
 
-No API endpoint, Supabase application client, knowledge importer, OAuth flow, UI, agent, MCP feature, RLS user policy, authentication table, or seed data is included.
+This migration slice itself introduced no API endpoint, Supabase application client, knowledge
+importer, OAuth flow, UI, agent, MCP feature, RLS user policy, authentication table, or seed data.
+The later Phase 2 application work is documented in `knowledge-import.md` and
+`client-knowledge-and-kpi.md`; it does not change the structural schema claims in this document.
 
 ## Migration order
 
