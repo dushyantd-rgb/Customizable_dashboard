@@ -32,12 +32,20 @@ export function ClientDetails({ clientId }: Readonly<{ clientId: string }>) {
               {data.name}
             </h1>
           </div>
-          <Link
-            className="border border-growthbyte-black px-4 py-2 font-medium hover:bg-growthbyte-black hover:text-growthbyte-white"
-            href={`/clients/${encodeURIComponent(clientId)}/knowledge`}
-          >
-            Manage knowledge
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="border border-growthbyte-black px-4 py-2 font-medium hover:bg-growthbyte-black hover:text-growthbyte-white"
+              href={`/clients/${encodeURIComponent(clientId)}/integrations`}
+            >
+              Manage integrations
+            </Link>
+            <Link
+              className="border border-growthbyte-black px-4 py-2 font-medium hover:bg-growthbyte-black hover:text-growthbyte-white"
+              href={`/clients/${encodeURIComponent(clientId)}/knowledge`}
+            >
+              Manage knowledge
+            </Link>
+          </div>
         </div>
         <dl className="mt-8 grid gap-px bg-growthbyte-black sm:grid-cols-2 lg:grid-cols-4">
           {[

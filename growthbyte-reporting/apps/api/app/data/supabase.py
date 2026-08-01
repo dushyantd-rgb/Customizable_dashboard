@@ -15,7 +15,25 @@ from app.knowledge.errors import (
 
 _IDENTIFIER_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
 
-REPORTING_TABLES = frozenset({"clients", "client_knowledge", "client_kpis"})
+REPORTING_TABLES = frozenset(
+    {
+        "clients",
+        "client_knowledge",
+        "client_kpis",
+        "integration_connections",
+        "google_oauth_credentials",
+        "google_sheet_configs",
+        "field_mappings",
+        "status_mappings",
+        "sync_runs",
+        "raw_sheet_rows",
+        "meta_accounts",
+        "meta_campaigns",
+        "meta_ad_sets",
+        "meta_ads",
+        "meta_daily_insights",
+    }
+)
 KNOWLEDGE_SOURCE_TABLES = frozenset(
     {
         "org_clients",

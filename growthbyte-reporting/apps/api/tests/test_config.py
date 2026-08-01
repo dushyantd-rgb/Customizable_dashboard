@@ -1,4 +1,10 @@
-from app.core.config import KnowledgeSupabaseSettings, ReportingSupabaseSettings
+from app.core.config import (
+    GoogleSettings,
+    KnowledgeSupabaseSettings,
+    MetaSettings,
+    ReportingSupabaseSettings,
+    Settings,
+)
 
 
 def test_exact_backend_environment_names_are_loaded_and_redacted(monkeypatch) -> None:
@@ -34,3 +40,20 @@ def test_knowledge_database_uri_is_not_mistaken_for_postgrest_url() -> None:
     )
 
     assert settings.configured is False
+
+
+def test_connector_placeholders_are_not_treated_as_credentials() -> None:
+    meta = MetaSettings(access_token="replace-with-meta-access-token", _env_file=None)
+    google = GoogleSettings(
+        oauth_client_id="your-google-client-id",
+        oauth_client_secret="change-me",
+        oauth_redirect_uri="placeholder",
+        _env_file=None,
+    )
+    settings = Settings(token_encryption_key="replace-with-32-byte-key", _env_file=None)
+
+    assert meta.access_token is None
+    assert google.oauth_client_id is None
+    assert google.oauth_client_secret is None
+    assert google.oauth_redirect_uri is None
+    assert settings.token_encryption_key is None

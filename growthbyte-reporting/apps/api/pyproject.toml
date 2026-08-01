@@ -5,6 +5,7 @@ description = "FastAPI foundation for the GrowthByte Reporting Platform"
 authors = [{ name = "GrowthByte" }]
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "cryptography>=45.0.0,<46.0.0",
     "fastapi>=0.116.1,<0.117.0",
     "httpx>=0.28.1,<0.29.0",
     "pydantic>=2.11.7,<3.0.0",

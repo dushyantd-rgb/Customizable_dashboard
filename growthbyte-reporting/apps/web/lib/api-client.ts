@@ -2,14 +2,25 @@ import { PUBLIC_SERVICE_DEFAULTS } from "@growthbyte/config";
 import type {
   ClientDetails,
   ClientSummary,
+  ColumnMappingInput,
+  GoogleSheetConfigInput,
+  GoogleSyncResult,
   KnowledgeCreate,
   KnowledgeRecord,
   KnowledgeUpdate,
   KpiCreate,
   KpiRecord,
   KpiUpdate,
+  MetaAccountDiscoveryResponse,
+  MetaConnectionInput,
+  MetaSyncInput,
+  MetaSyncResult,
   SafeErrorDetail,
   SafeErrorResponse,
+  SpreadsheetSummary,
+  StatusMappingInput,
+  SyncRunSummary,
+  WorksheetSummary,
 } from "@growthbyte/shared-types";
 
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? PUBLIC_SERVICE_DEFAULTS.apiUrl).replace(
@@ -87,6 +98,18 @@ function clientPath(clientId: string): string {
   return `/clients/${encodeURIComponent(clientId)}`;
 }
 
+function metaPath(clientId: string): string {
+  return `/integrations/meta/clients/${encodeURIComponent(clientId)}`;
+}
+
+function googlePath(clientId: string): string {
+  return `/integrations/google/clients/${encodeURIComponent(clientId)}`;
+}
+
+export function googleOAuthUrl(clientId: string): string {
+  return `${apiBaseUrl}${googlePath(clientId)}/oauth/start`;
+}
+
 export const api = {
   listClients: () => apiRequest<ClientSummary[]>("/clients"),
   getClient: (clientId: string) => apiRequest<ClientDetails>(clientPath(clientId)),
@@ -116,4 +139,75 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
+  listMetaAccounts: (clientId: string) =>
+    apiRequest<MetaAccountDiscoveryResponse>(`${metaPath(clientId)}/accounts`),
+  configureMeta: (clientId: string, input: MetaConnectionInput) =>
+    apiRequest<{ connection_id: string; external_account_id: string; display_name: string | null }>(
+      `${metaPath(clientId)}/config`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    ),
+  testMeta: (clientId: string) =>
+    apiRequest<{ connected: boolean }>(`${metaPath(clientId)}/test`, { method: "POST" }),
+  syncMeta: (clientId: string, input: MetaSyncInput) =>
+    apiRequest<MetaSyncResult>(`${metaPath(clientId)}/sync`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  listMetaSyncRuns: (clientId: string) =>
+    apiRequest<SyncRunSummary[]>(`${metaPath(clientId)}/sync-runs`),
+  listGoogleSpreadsheets: (clientId: string) =>
+    apiRequest<SpreadsheetSummary[]>(`${googlePath(clientId)}/spreadsheets`),
+  listGoogleWorksheets: (clientId: string, spreadsheetId: string) =>
+    apiRequest<WorksheetSummary[]>(
+      `${googlePath(clientId)}/spreadsheets/${encodeURIComponent(spreadsheetId)}/worksheets`,
+    ),
+  previewGoogleSheet: (
+    clientId: string,
+    spreadsheetId: string,
+    worksheetName: string,
+    headerRow: number,
+    dataStartRow: number,
+  ) =>
+    apiRequest<{ headers: string[] }>(
+      `${googlePath(clientId)}/spreadsheets/${encodeURIComponent(
+        spreadsheetId,
+      )}/worksheets/${encodeURIComponent(
+        worksheetName,
+      )}/preview?header_row=${headerRow}&data_start_row=${dataStartRow}`,
+    ),
+  configureGoogleSheet: (clientId: string, input: GoogleSheetConfigInput) =>
+    apiRequest<{ config_id: string }>(`${googlePath(clientId)}/config`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  saveGoogleColumnMappings: (
+    clientId: string,
+    configId: string,
+    mappings: readonly ColumnMappingInput[],
+  ) =>
+    apiRequest<{ mappings_saved: number }>(
+      `${googlePath(clientId)}/config/${encodeURIComponent(configId)}/column-mappings`,
+      { method: "POST", body: JSON.stringify(mappings) },
+    ),
+  saveGoogleStatusMappings: (
+    clientId: string,
+    configId: string,
+    mappings: readonly StatusMappingInput[],
+  ) =>
+    apiRequest<{ mappings_saved: number }>(
+      `${googlePath(clientId)}/config/${encodeURIComponent(configId)}/status-mappings`,
+      { method: "POST", body: JSON.stringify(mappings) },
+    ),
+  testGoogle: (clientId: string) =>
+    apiRequest<{ connected: boolean }>(`${googlePath(clientId)}/test`, { method: "POST" }),
+  syncGoogle: (clientId: string) =>
+    apiRequest<GoogleSyncResult>(`${googlePath(clientId)}/sync`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  listGoogleSyncRuns: (clientId: string) =>
+    apiRequest<SyncRunSummary[]>(`${googlePath(clientId)}/sync-runs`),
 };

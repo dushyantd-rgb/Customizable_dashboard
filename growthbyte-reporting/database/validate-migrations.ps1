@@ -18,6 +18,7 @@ $expectedTables = @(
     "client_knowledge",
     "client_kpis",
     "integration_connections",
+    "google_oauth_credentials",
     "google_sheet_configs",
     "field_mappings",
     "status_mappings",
@@ -29,7 +30,12 @@ $expectedTables = @(
     "reports",
     "report_versions",
     "report_version_metric_snapshots",
-    "audit_events"
+    "audit_events",
+    "meta_accounts",
+    "meta_campaigns",
+    "meta_ad_sets",
+    "meta_ads",
+    "meta_daily_insights"
 )
 
 $clientOwnedTables = @($expectedTables | Where-Object { $_ -ne "clients" })
