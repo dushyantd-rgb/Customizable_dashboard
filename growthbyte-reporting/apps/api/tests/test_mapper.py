@@ -40,3 +40,26 @@ def test_mapping_reports_missing_fields_and_requires_explicit_status() -> None:
     assert result.unresolved_record_count == 1
     assert "target_status_required" in result.blockers
     assert "missing_required_section_fields" in result.blockers
+
+
+def test_mapping_skips_empty_template_sections_without_blocking_valid_sections() -> None:
+    rows = source_rows()
+    rows["org_knowledge_base_sections"].append(
+        {
+            "id": "00000000-0000-4000-8000-000000000021",
+            "client_id": "source-client",
+            "section_key": "empty_template_section",
+            "content": None,
+            "structured_data": {},
+            "version": 1,
+        }
+    )
+
+    result = KnowledgeMapper().map(source_records=_records(rows), target_status="draft")
+
+    assert len(result.records) == 1
+    assert result.ignored_record_count == 1
+    assert result.unresolved_record_count == 0
+    assert result.blockers == ()
+    assert "empty_knowledge_sections_excluded" in result.warnings
+    assert "knowledge_items_excluded_pending_contract_approval" not in result.warnings

@@ -7,9 +7,11 @@ import useSWR from "swr";
 import { api, safeErrorMessage } from "../../lib/api-client";
 import { EmptyState, ErrorState, LoadingState } from "../async-state";
 import { SyncHistory } from "./sync-history";
+import { currentMonthToDate } from "./sync-date-range";
 
 interface MetaIntegrationPanelProps {
   readonly clientId: string;
+  readonly showSyncControls?: boolean;
 }
 
 interface ActionState {
@@ -17,9 +19,11 @@ interface ActionState {
   readonly message: string;
 }
 
-const initialDates = getInitialDates();
-
-export function MetaIntegrationPanel({ clientId }: MetaIntegrationPanelProps) {
+export function MetaIntegrationPanel({
+  clientId,
+  showSyncControls = true,
+}: MetaIntegrationPanelProps) {
+  const initialDates = currentMonthToDate();
   const accounts = useSWR<MetaAccountDiscoveryResponse>(["meta-accounts", clientId], () =>
     api.listMetaAccounts(clientId),
   );
@@ -150,46 +154,50 @@ export function MetaIntegrationPanel({ clientId }: MetaIntegrationPanelProps) {
         </button>
       </div>
 
-      <form
-        className="grid gap-4 border-t border-growthbyte-black/20 pt-6 sm:grid-cols-2"
-        onSubmit={sync}
-      >
-        <label className="space-y-2 font-medium">
-          <span>Start date</span>
-          <input
-            className="form-input"
-            onChange={(event) => setDateFrom(event.target.value)}
-            type="date"
-            value={dateFrom}
-          />
-        </label>
-        <label className="space-y-2 font-medium">
-          <span>End date</span>
-          <input
-            className="form-input"
-            onChange={(event) => setDateTo(event.target.value)}
-            type="date"
-            value={dateTo}
-          />
-        </label>
-        <div className="sm:col-span-2">
-          <button className="primary-button" disabled={busyAction !== null} type="submit">
-            {busyAction === "sync" ? "Syncing Meta..." : "Run Meta sync"}
-          </button>
-        </div>
-      </form>
+      {showSyncControls ? (
+        <form
+          className="grid gap-4 border-t border-growthbyte-black/20 pt-6 sm:grid-cols-2"
+          onSubmit={sync}
+        >
+          <label className="space-y-2 font-medium">
+            <span>Start date</span>
+            <input
+              className="form-input"
+              onChange={(event) => setDateFrom(event.target.value)}
+              type="date"
+              value={dateFrom}
+            />
+          </label>
+          <label className="space-y-2 font-medium">
+            <span>End date</span>
+            <input
+              className="form-input"
+              onChange={(event) => setDateTo(event.target.value)}
+              type="date"
+              value={dateTo}
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button className="primary-button" disabled={busyAction !== null} type="submit">
+              {busyAction === "sync" ? "Syncing Meta..." : "Run Meta sync"}
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {actionState ? <ActionNotice state={actionState} /> : null}
 
-      <div className="space-y-3 border-t border-growthbyte-black/20 pt-6">
-        <h3 className="text-xl font-semibold">Recent Meta syncs</h3>
-        <SyncHistory
-          error={history.error}
-          isLoading={history.isLoading}
-          runs={history.data}
-          sourceLabel="Meta"
-        />
-      </div>
+      {showSyncControls ? (
+        <div className="space-y-3 border-t border-growthbyte-black/20 pt-6">
+          <h3 className="text-xl font-semibold">Recent Meta syncs</h3>
+          <SyncHistory
+            error={history.error}
+            isLoading={history.isLoading}
+            runs={history.data}
+            sourceLabel="Meta"
+          />
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -207,14 +215,4 @@ function ActionNotice({ state }: Readonly<{ state: ActionState }>) {
       {state.message}
     </p>
   );
-}
-
-function getInitialDates(): { dateFrom: string; dateTo: string } {
-  const dateTo = new Date();
-  const dateFrom = new Date(dateTo);
-  dateFrom.setUTCDate(dateFrom.getUTCDate() - 6);
-  return {
-    dateFrom: dateFrom.toISOString().slice(0, 10),
-    dateTo: dateTo.toISOString().slice(0, 10),
-  };
 }

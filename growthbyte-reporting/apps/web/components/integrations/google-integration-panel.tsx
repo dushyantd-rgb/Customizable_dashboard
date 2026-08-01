@@ -15,6 +15,7 @@ import { SyncHistory } from "./sync-history";
 
 interface GoogleIntegrationPanelProps {
   readonly clientId: string;
+  readonly showSyncControls?: boolean;
 }
 
 interface ActionState {
@@ -70,7 +71,10 @@ const initialStatusDraft: StatusDraft = {
   counts_as_reviewed: false,
 };
 
-export function GoogleIntegrationPanel({ clientId }: GoogleIntegrationPanelProps) {
+export function GoogleIntegrationPanel({
+  clientId,
+  showSyncControls = true,
+}: GoogleIntegrationPanelProps) {
   const history = useSWR<SyncRunSummary[]>(["google-sync-runs", clientId], () =>
     api.listGoogleSyncRuns(clientId),
   );
@@ -503,28 +507,32 @@ export function GoogleIntegrationPanel({ clientId }: GoogleIntegrationPanelProps
         </div>
       </form>
 
-      <div className="flex flex-wrap gap-3 border-t border-growthbyte-black/20 pt-6">
-        <button
-          className="primary-button"
-          disabled={busyAction !== null}
-          onClick={syncSheet}
-          type="button"
-        >
-          {busyAction === "sync" ? "Syncing Sheet..." : "Run Google Sheet sync"}
-        </button>
-      </div>
+      {showSyncControls ? (
+        <div className="flex flex-wrap gap-3 border-t border-growthbyte-black/20 pt-6">
+          <button
+            className="primary-button"
+            disabled={busyAction !== null}
+            onClick={syncSheet}
+            type="button"
+          >
+            {busyAction === "sync" ? "Syncing Sheet..." : "Run Google Sheet sync"}
+          </button>
+        </div>
+      ) : null}
 
       {actionState ? <ActionNotice state={actionState} /> : null}
 
-      <div className="space-y-3 border-t border-growthbyte-black/20 pt-6">
-        <h3 className="text-xl font-semibold">Recent Google Sheet syncs</h3>
-        <SyncHistory
-          error={history.error}
-          isLoading={history.isLoading}
-          runs={history.data}
-          sourceLabel="Google Sheet"
-        />
-      </div>
+      {showSyncControls ? (
+        <div className="space-y-3 border-t border-growthbyte-black/20 pt-6">
+          <h3 className="text-xl font-semibold">Recent Google Sheet syncs</h3>
+          <SyncHistory
+            error={history.error}
+            isLoading={history.isLoading}
+            runs={history.data}
+            sourceLabel="Google Sheet"
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

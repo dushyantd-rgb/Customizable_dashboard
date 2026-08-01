@@ -1,11 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { GoogleIntegrationPanel } from "./google-integration-panel";
+import { LiveSyncPanel } from "./live-sync-panel";
 import { MetaIntegrationPanel } from "./meta-integration-panel";
 
-export function IntegrationsManager({ clientId }: Readonly<{ clientId: string }>) {
+type IntegrationTab = "connections" | "sync";
+
+interface IntegrationsManagerProps {
+  readonly clientId: string;
+  readonly initialTab?: IntegrationTab;
+}
+
+export function IntegrationsManager({
+  clientId,
+  initialTab = "connections",
+}: Readonly<IntegrationsManagerProps>) {
+  const [activeTab, setActiveTab] = useState<IntegrationTab>(initialTab);
+
   return (
     <div className="space-y-10">
       <header>
@@ -24,8 +38,53 @@ export function IntegrationsManager({ clientId }: Readonly<{ clientId: string }>
           request remains bound to this client ID.
         </p>
       </header>
-      <MetaIntegrationPanel clientId={clientId} />
-      <GoogleIntegrationPanel clientId={clientId} />
+      <div className="flex gap-2 border-b border-growthbyte-black" role="tablist">
+        <button
+          aria-controls="connections-panel"
+          aria-selected={activeTab === "connections"}
+          className={`px-5 py-3 font-semibold ${
+            activeTab === "connections"
+              ? "bg-growthbyte-black text-growthbyte-white"
+              : "hover:bg-growthbyte-black/10"
+          }`}
+          id="connections-tab"
+          onClick={() => setActiveTab("connections")}
+          role="tab"
+          type="button"
+        >
+          Connections
+        </button>
+        <button
+          aria-controls="sync-panel"
+          aria-selected={activeTab === "sync"}
+          className={`px-5 py-3 font-semibold ${
+            activeTab === "sync"
+              ? "bg-growthbyte-black text-growthbyte-white"
+              : "hover:bg-growthbyte-black/10"
+          }`}
+          id="sync-tab"
+          onClick={() => setActiveTab("sync")}
+          role="tab"
+          type="button"
+        >
+          Sync live data
+        </button>
+      </div>
+      {activeTab === "connections" ? (
+        <div
+          aria-labelledby="connections-tab"
+          className="space-y-10"
+          id="connections-panel"
+          role="tabpanel"
+        >
+          <MetaIntegrationPanel clientId={clientId} showSyncControls={false} />
+          <GoogleIntegrationPanel clientId={clientId} showSyncControls={false} />
+        </div>
+      ) : (
+        <div aria-labelledby="sync-tab" id="sync-panel" role="tabpanel">
+          <LiveSyncPanel clientId={clientId} />
+        </div>
+      )}
     </div>
   );
 }

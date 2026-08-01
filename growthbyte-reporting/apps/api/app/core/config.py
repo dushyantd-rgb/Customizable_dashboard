@@ -125,16 +125,76 @@ class MetaSettings(BaseSettings):
         exclude=True,
         repr=False,
     )
+    silpa_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="SILPA_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    superk_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="SUPERK_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    superk_ads_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="SUPERK_META_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    franchise_ads_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="FRANCHISE_META_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    superk_page_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="SUPERK_PAGE_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    franchise_page_access_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="FRANCHISE_PAGE_ACCESS_TOKEN",
+        exclude=True,
+        repr=False,
+    )
     graph_api_version: str = Field(
         default="v19.0",
         validation_alias="META_GRAPH_API_VERSION",
         pattern=r"^v\d+\.\d+$",
     )
 
-    @field_validator("access_token", mode="before")
+    @field_validator(
+        "access_token",
+        "silpa_access_token",
+        "superk_access_token",
+        "superk_ads_access_token",
+        "franchise_ads_access_token",
+        "superk_page_access_token",
+        "franchise_page_access_token",
+        mode="before",
+    )
     @classmethod
     def normalize_access_token(cls, value: object) -> object | None:
         return _normalize_optional_secret(value)
+
+    def access_token_for_client(self, client_slug: str) -> SecretStr | None:
+        """Return a client-bound token without exposing it to API responses or logs."""
+        normalized_slug = client_slug.strip().casefold()
+        if normalized_slug == "silpa":
+            return self.silpa_access_token
+        if normalized_slug == "superk":
+            return (
+                self.superk_access_token
+                or self.superk_ads_access_token
+                or self.superk_page_access_token
+            )
+        if normalized_slug == "franchise":
+            return self.franchise_ads_access_token or self.franchise_page_access_token
+        return self.access_token
 
 
 class GoogleSettings(BaseSettings):

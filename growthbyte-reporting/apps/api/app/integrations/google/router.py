@@ -52,7 +52,7 @@ async def google_oauth_callback(
     client_id = await service.complete_oauth_flow(code=code, state=state)
     destination = (
         f"{request.app.state.settings.web_url.rstrip('/')}/clients/{client_id}/integrations"
-        "?google=connected"
+        "?tab=sync&google=connected"
     )
     return RedirectResponse(destination, status_code=303)
 

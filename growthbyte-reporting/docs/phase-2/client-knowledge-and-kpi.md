@@ -1,7 +1,7 @@
 # Phase 2 client knowledge and KPI management
 
-Status: **implemented for the trusted internal MVP; live pilot validation and the original
-authentication/RLS exit criteria remain blocked**.
+Status: **implemented for the trusted internal MVP and live-import validated; business approval and
+the original authentication/RLS exit criteria remain open**.
 
 ## Scope and architecture
 
@@ -26,13 +26,13 @@ is part of this layer.
 | Constraints and indexes                            | Partial                               | UUID identities, same-client composite foreign keys, uniqueness, interval/shape checks, and client-leading indexes are implemented and migration-validated. Approved status, KPI unit, direction, attribution, metric, and report-state catalogs remain unavailable and therefore are not invented as enums. |
 | Audit fields                                       | Complete for the no-auth architecture | Mutable records use `created_at` and `updated_at`; knowledge carries import/approval provenance; operational `audit_events` carry process/operator labels and event time. No user foreign key is created.                                                                                                    |
 | Logical `client_id` scoping                        | Complete for this trusted MVP         | Every client-owned table has non-null `client_id`; owned repository calls require it; record reads and updates filter by both `client_id` and record id. This does not replace authorization or RLS.                                                                                                         |
-| Knowledge import layer                             | Complete; live validation blocked     | Preview, explicit apply confirmation, read-only source access, and atomic four-column idempotent upsert are implemented. Source tables are empty locally and no real import has been run.                                                                                                                    |
+| Knowledge import layer                             | Complete; live import validated       | Preview, explicit apply confirmation, read-only source access, and atomic four-column idempotent upsert are implemented. A controlled run imported 741 non-empty sections for 23 clients as `draft`; 207 empty templates were skipped and the source received zero writes.                                   |
 | Client knowledge API                               | Complete                              | Client-scoped list/get/create/update routes are available. There is no delete route.                                                                                                                                                                                                                         |
 | KPI API                                            | Complete                              | Client-scoped list/get/create/update routes use only current schema fields. There is no calculation or delete route.                                                                                                                                                                                         |
 | Client knowledge UI                                | Complete                              | Client navigation and a grouped knowledge management screen distinguish manual and imported records and provide create/edit flows without deletion.                                                                                                                                                          |
 | KPI UI                                             | Complete                              | The client detail screen provides effective-dated KPI list/create/edit behavior without calculating performance.                                                                                                                                                                                             |
 | Two de-identified development clients              | Complete for automated fixtures       | Test-only clients use different synthetic knowledge and KPI structures and are never applied as database seeds.                                                                                                                                                                                              |
-| Two live pilot knowledge records                   | Blocked                               | No approved pilot identifiers or populated source records are available. Fixture coverage is not live-pilot validation.                                                                                                                                                                                      |
+| Two live pilot knowledge records                   | Imported; approval pending            | Live source-backed records now exist for 23 clients. Business review and promotion from `draft` remain pending.                                                                                                                                                                                              |
 | Client-isolation tests                             | Complete for logical scoping          | Automated tests prove client-filtered knowledge and KPI access, scoped record lookup/update, request-body immutability, and safe unknown-client behavior. Cross-client RLS cannot be claimed because RLS/authentication is deliberately absent.                                                              |
 
 ## API routes
@@ -179,15 +179,15 @@ only in automated tests; they are not migration seeds and are not applied to pro
 
 ## Live pilot status and safety
 
-Read-only discovery confirmed `org_clients`, `org_knowledge_items`, and
-`org_knowledge_base_sections` but found zero rows. No two approved pilot client identifiers or
-populated source records were supplied. Consequently:
+Read-only discovery confirmed 36 source clients, 948 structured sections, and zero free-form
+knowledge items. A controlled import created 23 reporting-client roots and upserted 741 non-empty
+sections as `draft`; 207 empty template sections and 13 source entries without usable knowledge
+were excluded. Read-back validation confirmed exact per-client counts and unique source and
+semantic identities. The existing development fixture remained unchanged.
 
-- live two-client knowledge validation is blocked;
-- no real client was imported;
-- no development fixture was applied to a live database;
-- the knowledge Supabase received zero writes;
-- its adapter still exposes no insert, update, upsert, delete, or RPC method.
+The knowledge Supabase received zero writes, and its adapter still exposes no insert, update,
+upsert, delete, or RPC method. The imported client roots use the operator-confirmed defaults
+`Asia/Kolkata` for reporting timezone and `INR` for default currency.
 
 Service-role keys remain backend-only and are absent from browser contracts, API responses, logs,
 errors, snapshots, and fixtures.
@@ -201,8 +201,8 @@ the original TRD Phase 2 exit criteria are not fully met:
    has no users, login, memberships, roles, authorization, or RLS.
 2. "Cross-client RLS tests pass" cannot be claimed because no user-based RLS policies exist. The
    repository/API tests prove application-level client filtering instead.
-3. "Two pilot clients have validated knowledge records" remains blocked until approved pilot
-   identifiers and populated source records are supplied and a real import is separately approved.
+3. Source-backed knowledge records now exist for more than two clients, but business validation
+   and approval of the imported `draft` status remain pending.
 4. KPI semantic catalogs and several free-form knowledge mappings remain unresolved Phase 0
    contract decisions.
 

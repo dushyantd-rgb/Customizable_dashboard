@@ -201,11 +201,11 @@ schema, controlled knowledge import, and client knowledge/KPI management are doc
 - `docs/phase-2/knowledge-import.md`
 - `docs/phase-2/client-knowledge-and-kpi.md`
 
-No live pilot can be claimed: the discovered knowledge-source tables are empty and no approved pilot
-client identifiers were supplied. No real client has been imported. The original Phase 2 TRD exit
-criteria around assigned users and cross-client RLS also remain unmet because authentication and
-RLS are explicitly outside this trusted MVP. KPI semantic catalogs, the free-form knowledge-item
-mapping, pilot Sheets, lead-status/funnel rules, and attribution evidence remain unresolved Phase 0
-contracts. Live REST checks also remain blocked until the reporting configuration uses the exact
-backend names above and the knowledge URL is an HTTP(S) Supabase project URL. Phase 3 has not
-started.
+A controlled live import on 2026-08-01 created 23 reporting-client roots and upserted 741 non-empty
+knowledge sections as `draft`; 207 empty source templates were skipped and the source received zero
+writes. Business review remains required. The original Phase 2
+TRD exit criteria around assigned users and cross-client RLS also remain unmet because
+authentication and RLS are explicitly outside this trusted MVP. KPI semantic catalogs, the
+free-form knowledge-item mapping, pilot Sheets, lead-status/funnel rules, and attribution evidence
+remain unresolved Phase 0 contracts. The local knowledge URL must also be corrected to match its
+configured credential before standard CLI/readiness calls will work.

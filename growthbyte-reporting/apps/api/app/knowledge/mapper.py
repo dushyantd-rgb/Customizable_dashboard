@@ -26,6 +26,8 @@ class KnowledgeMapper:
         warnings: list[str] = []
         blockers: list[str] = []
         ignored_count = 0
+        ignored_item_count = 0
+        empty_section_count = 0
         unresolved_count = 0
 
         if not source_records:
@@ -37,10 +39,18 @@ class KnowledgeMapper:
         for source_record in source_records:
             if source_record.table == _ITEM_TABLE:
                 ignored_count += 1
+                ignored_item_count += 1
                 continue
             if source_record.table != _SECTION_TABLE:
                 unresolved_count += 1
                 blockers.append("unsupported_source_table")
+                continue
+
+            if _is_empty_section(source_record.fields) and _has_required_section_identity(
+                source_record.fields
+            ):
+                ignored_count += 1
+                empty_section_count += 1
                 continue
 
             mapped_record = self._map_section(
@@ -53,8 +63,10 @@ class KnowledgeMapper:
                 continue
             records.append(mapped_record)
 
-        if ignored_count:
+        if ignored_item_count:
             warnings.append("knowledge_items_excluded_pending_contract_approval")
+        if empty_section_count:
+            warnings.append("empty_knowledge_sections_excluded")
         if not records:
             blockers.append("no_importable_knowledge")
 
@@ -218,3 +230,15 @@ def _has_knowledge_value(content: Any, structured_data: Any) -> bool:
     )
     structured_present = structured_data not in (None, {}, [], "")
     return content_present or structured_present
+
+
+def _is_empty_section(row: dict[str, Any]) -> bool:
+    return not _has_knowledge_value(row.get("content"), row.get("structured_data"))
+
+
+def _has_required_section_identity(row: dict[str, Any]) -> bool:
+    return (
+        _nonempty_string(row.get("id")) is not None
+        and _nonempty_string(row.get("section_key")) is not None
+        and _positive_integer(row.get("version")) is not None
+    )

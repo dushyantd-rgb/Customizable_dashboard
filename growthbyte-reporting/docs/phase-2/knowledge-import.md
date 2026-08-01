@@ -1,7 +1,6 @@
 # Phase 2 knowledge import
 
-Status: **implemented and unit-tested; local source schema discovered read-only; real import not
-run**.
+Status: **implemented, unit-tested, and live-validated with a controlled read-only-source import**.
 
 ## Scope and architecture
 
@@ -36,11 +35,12 @@ The two URLs must be HTTP(S) Supabase project URLs suitable for `/rest/v1`, not 
 connection strings. Placeholders and incomplete pairs are treated as `not_configured`. These
 variables must never use a `NEXT_PUBLIC_` prefix.
 
-Local configuration inspection on 2026-08-01 found both required knowledge variable names. The
-configured knowledge URL is a direct PostgreSQL URI, so the REST adapter safely treats the source
-as not configured. The two required reporting variable names are absent; existing variables under
-other names are deliberately not consumed. No `.env` value was copied into code, documentation,
-tests, logs, or command output.
+Local configuration inspection on 2026-08-01 found all four variables under their exact names, and
+the reporting REST endpoint was reachable. The configured knowledge URL did not match the project
+reference carried by its service-role credential and its hostname did not resolve. A
+credential-matched HTTP endpoint was derived in memory for the controlled import; the local `.env`
+URL still needs correction before the standard CLI and readiness paths can reach the source. No
+`.env` value was copied into code, documentation, tests, logs, or command output.
 
 ## Source schema evidence
 
@@ -53,13 +53,11 @@ Repository evidence in `docs/phase-0/source-schema-inventory.md` identifies:
 - `org_knowledge_items` with `id`, nullable `client_id`, `title`, `content`, `content_type`, `tags`,
   `created_at`, and `updated_at` among its migration-derived columns.
 
-On 2026-08-01, the already-running local Supabase database labeled for the Phase 0 source project
-was queried inside an explicit read-only transaction. `information_schema` confirmed all three
-tables and the columns above; additional section completion, gap, review, and change-attribution
-columns remain outside the importer allowlist. Aggregate-only counts showed zero rows in each of
-the three tables, and the transaction was rolled back. The configured external source host could
-not be resolved from disposable Docker, and REST discovery could not use its direct PostgreSQL URL.
-No client id, client name, knowledge value, credential, or complete payload was printed or stored.
+On 2026-08-01, live GET-only REST discovery confirmed 36 source clients, 948 structured sections,
+and zero free-form knowledge items. Of the sections, 741 contained importable knowledge across 23
+clients and 207 were structurally valid empty templates. The remaining 13 source client entries had
+no importable knowledge. Additional section completion, gap, review, and change-attribution columns
+remain outside the importer allowlist.
 
 ## Field mapping
 
@@ -77,6 +75,7 @@ No client id, client name, knowledge value, credential, or complete payload was 
 | explicit target id                                              | `client_id`                      | mapped         | Required and target-validated; source id is never copied      |
 | explicit operator value                                         | `status`                         | mapped         | Required for apply; no status is inferred                     |
 | section `client_id`                                             | none                             | ignored        | Used only to scope source reads                               |
+| section with no `content` or `structured_data`                  | none                             | ignored        | Empty template; reported with an explicit preview warning     |
 | section approvals/review attribution and source timestamps      | none                             | ignored        | User/review migration is outside the approved contract        |
 | `org_knowledge_items` fields                                    | none                             | unresolved     | Approved subset and stable source-version rule remain blocked |
 
@@ -127,7 +126,11 @@ target client, source type, source id, and source version updates that identity 
 a duplicate. The repository exposes no delete operation, and the source adapter exposes no write
 operation. A conflict or unexpected response count fails safely; no compensating delete occurs.
 
-No real apply command was run while implementing or validating this layer.
+The 2026-08-01 controlled apply created 23 reporting-client roots and upserted 741 non-empty source
+sections with status `draft`. Source and target UUIDs were matched explicitly, empty template
+sections were skipped, and the existing development client and its three manual knowledge records
+were left unchanged. Read-back validation confirmed all 741 source identities and all 741 semantic
+identities were unique. The knowledge source received zero writes.
 
 ## Readiness and failure handling
 
@@ -143,24 +146,24 @@ databases, mapping blockers, confirmation mismatch, PostgREST upsert conflict, a
 ## Validation
 
 Mocked tests cover mandatory target-client filtering, GET-only source access, source filtering,
-preview zero-write behavior, mapping classification, missing/duplicate clients, invalid ids,
-missing fields, explicit confirmation, repeated idempotent apply, absence of deletes, the exact
-four-column PostgREST conflict target, safe readiness, placeholder handling, unavailable databases,
-upsert conflicts, and secret-safe errors. Fixtures contain only short synthetic fragments.
+preview zero-write behavior, mapping classification, safe exclusion of structurally valid empty
+templates, missing/duplicate clients, invalid ids, missing fields, explicit confirmation, repeated
+idempotent apply, absence of deletes, the exact four-column PostgREST conflict target, safe
+readiness, placeholder handling, unavailable databases, upsert conflicts, and secret-safe errors.
+Fixtures contain only short synthetic fragments.
 
 Disposable PostgreSQL 17 validates all six migrations, the source-identity constraint, four-column
 `ON CONFLICT` inference, and PostgreSQL null behavior. The labeled container was removed afterward.
-A disposable reporting PostgREST stack was not installed, so reporting REST integration was
-mocked. Live read-only preview validation was skipped because the configured knowledge URL is not
-HTTP(S) and the verified local source tables are empty. These checks must be rerun after correct
-HTTP(S) project URLs and de-identified source evidence are configured. Production was not contacted
-or modified.
+A disposable reporting PostgREST stack was not installed, so automated reporting REST integration
+remains mocked. The controlled live run supplied REST integration evidence through source reads,
+target client creation, atomic target knowledge upserts, and target read-back verification. It did
+not expose credentials or source payloads in command output.
 
 ## Blockers
 
-1. Configure the two required reporting variables under their exact names.
-2. Replace the knowledge direct PostgreSQL URI with the source Supabase HTTP(S) project URL for
-   REST discovery and preview.
+1. Correct `SUPABASE_KNOWLEDGE_BASE_URL` so it matches the configured source credential before
+   using the standard CLI or readiness checks.
+2. Review and approve the 741 imported `draft` records before treating them as approved knowledge.
 3. Approve the `org_knowledge_items` subset, taxonomy, status vocabulary, source-version rule, and
    any history/document/review mapping before expanding the importer.
 4. Add authentication/authorization before exposing import behavior over an API or public network.

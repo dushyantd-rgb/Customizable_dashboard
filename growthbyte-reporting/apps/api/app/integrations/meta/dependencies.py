@@ -2,22 +2,34 @@
 
 from collections.abc import AsyncIterator
 from typing import Annotated, cast
+from uuid import UUID
 
 from fastapi import Depends, Request
 
+from app.api.v1.dependencies import ReportingClientDependency
+from app.core.errors import ClientNotFoundError, ConnectorConfigurationError
 from app.data.supabase import ReportingSupabaseClientProtocol
 from app.integrations.meta.client import MetaGraphClient
 from app.integrations.meta.repository import MetaRepository
 from app.integrations.meta.service import MetaSyncService
 from app.knowledge.errors import PlaceholderCredentialsError
+from app.repositories.clients import ReportingClientRepository
 
 
-async def get_meta_client(request: Request) -> AsyncIterator[MetaGraphClient]:
+async def get_meta_client(
+    client_id: UUID,
+    request: Request,
+    reporting_client: ReportingClientDependency,
+) -> AsyncIterator[MetaGraphClient]:
     settings = request.app.state.settings
-    if settings.meta.access_token is None:
-        raise PlaceholderCredentialsError
+    client_record = await ReportingClientRepository(reporting_client).get(client_id=client_id)
+    if client_record is None:
+        raise ClientNotFoundError
+    access_token = settings.meta.access_token_for_client(client_record.slug)
+    if access_token is None:
+        raise ConnectorConfigurationError
     client = MetaGraphClient(
-        access_token=settings.meta.access_token.get_secret_value(),
+        access_token=access_token.get_secret_value(),
         api_version=settings.meta.graph_api_version,
     )
     try:

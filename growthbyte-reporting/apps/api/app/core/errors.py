@@ -15,6 +15,12 @@ class ClientNotFoundError(SafeApplicationError):
     status_code = 404
 
 
+class ConnectorConfigurationError(SafeApplicationError):
+    code = "connector_not_configured"
+    safe_message = "Required connector credentials are not configured"
+    status_code = 503
+
+
 class KnowledgeRecordNotFoundError(SafeApplicationError):
     code = "knowledge_record_not_found"
     safe_message = "The client knowledge record does not exist"

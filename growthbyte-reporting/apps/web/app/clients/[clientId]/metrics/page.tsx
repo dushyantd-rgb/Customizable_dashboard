@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-import { api, safeErrorMessage } from '../../../lib/api-client';
-import { ErrorState, LoadingState } from '../../../components/async-state';
+import { api, safeErrorMessage } from '@/lib/api-client';
+import { LoadingState } from '@/components/async-state';
 
 interface MetricValue {
   metric_key: string;
@@ -345,7 +345,7 @@ export default function MetricsPage() {
 
       {!metrics && !snapshots.length && !loading && (
         <div className="text-gray-600">
-          Select a date range and click "Preview Metrics" to view calculated metrics, or "List Snapshots" to view saved snapshots.
+          Select a date range and click &quot;Preview Metrics&quot; to view calculated metrics, or &quot;List Snapshots&quot; to view saved snapshots.
         </div>
       )}
     </div>

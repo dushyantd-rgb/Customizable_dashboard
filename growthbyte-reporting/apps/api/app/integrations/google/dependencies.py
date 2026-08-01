@@ -4,6 +4,7 @@ from typing import Annotated, cast
 
 from fastapi import Depends, Request
 
+from app.core.errors import ConnectorConfigurationError
 from app.data.supabase import ReportingSupabaseClientProtocol
 from app.integrations.google.repository import GoogleSheetsRepository
 from app.integrations.google.service import GoogleSheetsService
@@ -13,8 +14,10 @@ from app.knowledge.errors import PlaceholderCredentialsError
 def get_google_repository(request: Request) -> GoogleSheetsRepository:
     settings = request.app.state.settings
     client = request.app.state.reporting_supabase_client
-    if settings.token_encryption_key is None or client is None:
+    if client is None:
         raise PlaceholderCredentialsError
+    if settings.token_encryption_key is None:
+        raise ConnectorConfigurationError
     return GoogleSheetsRepository(
         cast(ReportingSupabaseClientProtocol, client),
         settings.token_encryption_key,

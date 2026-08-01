@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-import { api, safeErrorMessage } from '../../../lib/api-client';
-import { ErrorState, LoadingState } from '../../../components/async-state';
+import { api, safeErrorMessage } from '@/lib/api-client';
+import { LoadingState } from '@/components/async-state';
 
 interface UnmatchedLead {
   id: string;
@@ -90,21 +90,6 @@ export default function MatchingPage() {
     try {
       const data = await api.listAmbiguousLeads(clientId);
       setAmbiguousLeads(data as UnmatchedLead[]);
-    } catch (err) {
-      setError(safeErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleManualMatch = async (leadId: string, campaignId: string) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // For now, we'll just show a message. The actual manual match would require
-      // a proper form to select the match details.
-      setSuccess(`Manual match to ${campaignId} would be applied here`);
     } catch (err) {
       setError(safeErrorMessage(err));
     } finally {

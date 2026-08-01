@@ -34,6 +34,12 @@ export function ClientDetails({ clientId }: Readonly<{ clientId: string }>) {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              className="border border-growthbyte-teal bg-growthbyte-teal px-4 py-2 font-medium text-growthbyte-white hover:bg-growthbyte-black"
+              href={`/clients/${encodeURIComponent(clientId)}/integrations?tab=sync`}
+            >
+              Sync live data
+            </Link>
+            <Link
               className="border border-growthbyte-black px-4 py-2 font-medium hover:bg-growthbyte-black hover:text-growthbyte-white"
               href={`/clients/${encodeURIComponent(clientId)}/integrations`}
             >
