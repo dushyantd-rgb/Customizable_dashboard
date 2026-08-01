@@ -14,6 +14,8 @@ from app.knowledge.errors import (
 )
 
 _IDENTIFIER_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
+_FILTER_VALUE_PATTERN = re.compile(r"^[^\x00-\x1f\x7f]+$")
+_READ_FILTER_OPERATORS = frozenset({"eq", "neq", "gt", "gte", "lt", "lte", "is", "in"})
 
 REPORTING_TABLES = frozenset(
     {
@@ -27,11 +29,26 @@ REPORTING_TABLES = frozenset(
         "status_mappings",
         "sync_runs",
         "raw_sheet_rows",
+        "lead_records",
+        "lead_matches",
         "meta_accounts",
         "meta_campaigns",
         "meta_ad_sets",
         "meta_ads",
         "meta_daily_insights",
+        "meta_period_insights",
+        "lead_json_imports",
+        "gsc_properties",
+        "gsc_period_totals",
+        "gsc_dimension_metrics",
+        "monthly_report_snapshots",
+        "metric_snapshots",
+        "reports",
+        "report_versions",
+        "report_version_metric_snapshots",
+        "report_exports",
+        "agent_runs",
+        "audit_events",
     }
 )
 KNOWLEDGE_SOURCE_TABLES = frozenset(
@@ -143,7 +160,7 @@ class _SupabaseRestClient:
         if limit < 1 or limit > 1000:
             raise ValueError("Supabase query limit is outside the allowed range")
         params = [("select", ",".join(columns)), ("limit", str(limit))]
-        params.extend((column, f"eq.{value}") for column, value in filters.items())
+        params.extend((column, _encode_read_filter(value)) for column, value in filters.items())
         response = await self._get(table=table, params=params)
         try:
             payload = response.json()
@@ -253,6 +270,19 @@ class ReportingSupabaseClient(_SupabaseRestClient):
 
 class ReadOnlyKnowledgeSupabaseClient(_SupabaseRestClient):
     """GET-only client; mutation methods are intentionally absent."""
+
+
+def _encode_read_filter(value: str) -> str:
+    """Encode a trusted equality value or a small allowlist of PostgREST operators."""
+    normalized = str(value)
+    if not _FILTER_VALUE_PATTERN.fullmatch(normalized):
+        raise ValueError("Supabase query contains an invalid filter value")
+    operator, separator, operand = normalized.partition(".")
+    if separator and operator in _READ_FILTER_OPERATORS:
+        if not operand:
+            raise ValueError("Supabase query contains an empty filter operand")
+        return normalized
+    return f"eq.{normalized}"
 
 
 def _build_http_client(

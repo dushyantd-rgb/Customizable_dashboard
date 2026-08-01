@@ -27,7 +27,9 @@ def _lifespan() -> object:
         owned_clients: list[SupabaseReadClient] = []
         application_settings: Settings = application.state.settings
 
-        logger.info(f"Checking Supabase config: reporting={application_settings.reporting_supabase.configured}, knowledge={application_settings.knowledge_supabase.configured}")
+        logger.info(
+            f"Checking Supabase config: reporting={application_settings.reporting_supabase.configured}, knowledge={application_settings.knowledge_supabase.configured}"
+        )
 
         if (
             application.state.reporting_supabase_client is None

@@ -9,6 +9,7 @@ from app.integrations.meta.router import router as meta_router
 from app.matching.router import metrics_router
 from app.matching.router import router as matching_router
 from app.models.health import HealthResponse
+from app.superk.router import router as superk_router
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(clients_router)
@@ -18,6 +19,7 @@ router.include_router(meta_router)
 router.include_router(google_router)
 router.include_router(matching_router)
 router.include_router(metrics_router)
+router.include_router(superk_router)
 
 
 @router.get("/health", response_model=HealthResponse, tags=["health"])

@@ -94,4 +94,16 @@ describe("API client", () => {
       expect(body).not.toMatch(/access_token|refresh_token|client_secret|service_role/i);
     }
   });
+
+  it("generates the SuperK Franchise report with an empty client-scoped request", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({ json: async () => ({}), ok: true });
+    global.fetch = fetchMock;
+
+    await api.generateSuperKFranchiseReport("client/one");
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/clients/client%2Fone/superk-franchise-report/generate");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeUndefined();
+  });
 });

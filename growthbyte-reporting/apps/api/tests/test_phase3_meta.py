@@ -81,6 +81,36 @@ class _FakeMeta:
         ]
 
 
+class _FakeMetaWithHistoricalAd(_FakeMeta):
+    async def get_insights(
+        self,
+        *,
+        external_account_id: str,
+        date_from: str,
+        date_to: str,
+        level: str,
+    ) -> list[MetaInsightRow]:
+        rows = await super().get_insights(
+            external_account_id=external_account_id,
+            date_from=date_from,
+            date_to=date_to,
+            level=level,
+        )
+        if level == "ad":
+            rows.append(
+                MetaInsightRow(
+                    date_start=date_from,
+                    date_stop=date_to,
+                    account_id="account-1",
+                    campaign_id="campaign-1",
+                    adset_id="adset-1",
+                    ad_id="historical-ad",
+                    impressions="25",
+                )
+            )
+        return rows
+
+
 @pytest.mark.asyncio
 async def test_meta_config_and_repeated_sync_are_client_scoped_and_idempotent() -> None:
     store = Phase3MemoryClient()
@@ -110,6 +140,8 @@ async def test_meta_config_and_repeated_sync_are_client_scoped_and_idempotent() 
         "succeeded",
         "succeeded",
     ]
+    latest_runs = await repository.get_sync_runs(client_id=client_a, limit=1)
+    assert latest_runs[0]["id"] == second.sync_run_id
     assert all(row["client_id"] == SYNTHETIC_CLIENT_A_ID for row in store.rows["sync_runs"])
     assert all(
         call["filters"].get("client_id") in {None, SYNTHETIC_CLIENT_A_ID, SYNTHETIC_CLIENT_B_ID}
@@ -130,3 +162,37 @@ async def test_meta_account_configuration_is_stable_on_repeat() -> None:
     await service.configure_connection(client_id=client_id, config=config)
     assert len(store.rows["integration_connections"]) == 1
     assert len(store.rows["meta_accounts"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_meta_sync_preserves_insights_for_deleted_historical_ads() -> None:
+    store = Phase3MemoryClient()
+    service = MetaSyncService(
+        meta_client=_FakeMetaWithHistoricalAd(),  # type: ignore[arg-type]
+        repository=MetaRepository(store),
+    )
+    client_id = UUID(SYNTHETIC_CLIENT_A_ID)
+    await service.configure_connection(
+        client_id=client_id,
+        config=MetaConnectionConfig(external_account_id="account-1"),
+    )
+
+    result = await service.sync_data(
+        client_id=client_id,
+        request=MetaSyncRequest(date_from=date(2026, 7, 1), date_to=date(2026, 7, 1)),
+    )
+
+    assert result.status == "succeeded"
+    assert result.warning_count == 1
+    assert result.ads_synced == 2
+    assert store.rows["sync_runs"][0]["rows_rejected"] == 1
+    historical_ad = next(
+        row for row in store.rows["meta_ads"] if row["external_ad_id"] == "historical-ad"
+    )
+    assert historical_ad["name"] is None
+    assert any(
+        row["entity_level"] == "ad"
+        and row["external_entity_id"] == "historical-ad"
+        and row["entity_id"] == historical_ad["id"]
+        for row in store.rows["meta_daily_insights"]
+    )

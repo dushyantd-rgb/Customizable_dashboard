@@ -107,6 +107,41 @@ class MetaGraphClient:
 
         return payload
 
+    async def _request_all_data(
+        self,
+        *,
+        path: str,
+        params: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Read every cursor page for a Graph API collection without following tokenized URLs."""
+        rows: list[dict[str, Any]] = []
+        after: str | None = None
+        seen_cursors: set[str] = set()
+
+        while True:
+            page_params = dict(params or {})
+            if after is not None:
+                page_params["after"] = after
+            payload = await self._request(path=path, params=page_params)
+            page_rows = payload.get("data", [])
+            if not isinstance(page_rows, list) or any(
+                not isinstance(row, dict) for row in page_rows
+            ):
+                logger.warning("Meta API returned an invalid collection", extra={"path": path})
+                raise MetaApiError
+            rows.extend(page_rows)
+
+            paging = payload.get("paging")
+            if not isinstance(paging, dict) or not paging.get("next"):
+                return rows
+            cursors = paging.get("cursors")
+            next_after = cursors.get("after") if isinstance(cursors, dict) else None
+            if not isinstance(next_after, str) or not next_after or next_after in seen_cursors:
+                logger.warning("Meta API returned invalid cursor paging", extra={"path": path})
+                raise MetaApiError
+            seen_cursors.add(next_after)
+            after = next_after
+
     async def discover_ad_accounts(self) -> list[MetaAdAccountSummary]:
         """
         List ad accounts accessible to the environment token.
@@ -116,15 +151,13 @@ class MetaGraphClient:
         """
         try:
             # Get the "me" user's ad accounts
-            data = await self._request(
+            accounts_data = await self._request_all_data(
                 path="me/adaccounts",
                 params={
                     "fields": "id,name,currency,timezone_name,account_status",
                     "limit": 100,
                 },
             )
-
-            accounts_data = data.get("data", [])
             accounts = []
             for account in accounts_data:
                 # Remove "act_" prefix if present
@@ -152,19 +185,17 @@ class MetaGraphClient:
             raise MetaApiError from error
 
     async def get_campaigns(
-        self, *, external_account_id: str, limit: int = 100
+        self, *, external_account_id: str, limit: int = 1000
     ) -> list[MetaCampaignSummary]:
         """Get campaigns for an ad account."""
         try:
-            data = await self._request(
+            campaigns_data = await self._request_all_data(
                 path=f"act_{external_account_id}/campaigns",
                 params={
                     "fields": "id,name,objective,status,effective_status",
                     "limit": str(limit),
                 },
             )
-
-            campaigns_data = data.get("data", [])
             return [
                 MetaCampaignSummary(
                     external_campaign_id=campaign.get("id", ""),
@@ -180,19 +211,17 @@ class MetaGraphClient:
             raise MetaApiError from error
 
     async def get_ad_sets(
-        self, *, external_account_id: str, limit: int = 100
+        self, *, external_account_id: str, limit: int = 1000
     ) -> list[MetaAdSetSummary]:
         """Get ad sets for an ad account."""
         try:
-            data = await self._request(
+            ad_sets_data = await self._request_all_data(
                 path=f"act_{external_account_id}/adsets",
                 params={
                     "fields": "id,campaign_id,name,status,effective_status",
                     "limit": str(limit),
                 },
             )
-
-            ad_sets_data = data.get("data", [])
             return [
                 MetaAdSetSummary(
                     external_ad_set_id=ad_set.get("id", ""),
@@ -207,18 +236,16 @@ class MetaGraphClient:
             logger.warning("Meta API ad sets response missing key", exc_info=True)
             raise MetaApiError from error
 
-    async def get_ads(self, *, external_account_id: str, limit: int = 100) -> list[MetaAdSummary]:
+    async def get_ads(self, *, external_account_id: str, limit: int = 1000) -> list[MetaAdSummary]:
         """Get ads for an ad account."""
         try:
-            data = await self._request(
+            ads_data = await self._request_all_data(
                 path=f"act_{external_account_id}/ads",
                 params={
                     "fields": "id,adset_id,name,creative{id},status,effective_status",
                     "limit": str(limit),
                 },
             )
-
-            ads_data = data.get("data", [])
             return [
                 MetaAdSummary(
                     external_ad_id=ad.get("id", ""),
@@ -245,7 +272,7 @@ class MetaGraphClient:
         date_from: str,
         date_to: str,
         level: str = "account",
-        limit: int = 100,
+        limit: int = 1000,
     ) -> list[MetaInsightRow]:
         """
         Get daily insights for an ad account.
@@ -261,13 +288,13 @@ class MetaGraphClient:
             List of insight rows with metrics
         """
         try:
-            data = await self._request(
+            insights_data = await self._request_all_data(
                 path=f"act_{external_account_id}/insights",
                 params={
                     "fields": (
                         "account_id,campaign_id,adset_id,ad_id,"
                         "impressions,reach,clicks,spend,"
-                        "actions,action_values"
+                        "inline_link_clicks,actions,action_values"
                     ),
                     "level": level,
                     "time_range": json.dumps({"since": date_from, "until": date_to}),
@@ -275,12 +302,39 @@ class MetaGraphClient:
                     "limit": str(limit),
                 },
             )
-
-            insights_data = data.get("data", [])
             return [MetaInsightRow.model_validate(insight) for insight in insights_data]
         except KeyError as error:
             logger.warning("Meta API insights response missing key", exc_info=True)
             raise MetaApiError from error
+
+    async def get_period_insights(
+        self,
+        *,
+        external_account_id: str,
+        date_from: str,
+        date_to: str,
+        level: str = "account",
+        limit: int = 1000,
+    ) -> list[MetaInsightRow]:
+        """Get period-level insights without daily time increment.
+
+        This is the authoritative source for non-additive reach and for ratios whose
+        numerators and denominators must be aggregated over the complete period.
+        """
+        insights_data = await self._request_all_data(
+            path=f"act_{external_account_id}/insights",
+            params={
+                "fields": (
+                    "account_id,campaign_id,adset_id,ad_id,"
+                    "impressions,reach,clicks,inline_link_clicks,spend,"
+                    "actions,action_values"
+                ),
+                "level": level,
+                "time_range": json.dumps({"since": date_from, "until": date_to}),
+                "limit": str(limit),
+            },
+        )
+        return [MetaInsightRow.model_validate(insight) for insight in insights_data]
 
     async def validate_token(self) -> bool:
         """Validate that the access token is working."""

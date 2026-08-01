@@ -34,6 +34,12 @@ export function ClientDetails({ clientId }: Readonly<{ clientId: string }>) {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              className="border border-growthbyte-amber bg-growthbyte-amber px-4 py-2 font-medium text-growthbyte-white hover:bg-growthbyte-black"
+              href={`/clients/${encodeURIComponent(clientId)}/reports/superk-franchise`}
+            >
+              SuperK Franchise report
+            </Link>
+            <Link
               className="border border-growthbyte-teal bg-growthbyte-teal px-4 py-2 font-medium text-growthbyte-white hover:bg-growthbyte-black"
               href={`/clients/${encodeURIComponent(clientId)}/integrations?tab=sync`}
             >
@@ -87,16 +93,21 @@ export function ClientDetails({ clientId }: Readonly<{ clientId: string }>) {
             🎯 Phase 4: Attribution Matching & Metrics
           </h3>
           <p className="text-gray-700 mb-4">
-            New features available! Match leads to campaigns and view calculated KPIs with quality scores.
+            New features available! Match leads to campaigns and view calculated KPIs with quality
+            scores.
           </p>
           <div className="flex gap-4">
             <div className="flex-1">
               <h4 className="font-medium text-blue-900">Lead Matching</h4>
-              <p className="text-sm text-gray-600">Match imported leads to Meta campaigns for accurate attribution</p>
+              <p className="text-sm text-gray-600">
+                Match imported leads to Meta campaigns for accurate attribution
+              </p>
             </div>
             <div className="flex-1">
               <h4 className="font-medium text-green-900">Metrics Dashboard</h4>
-              <p className="text-sm text-gray-600">View calculated KPIs including CPL, qualification rates, and more</p>
+              <p className="text-sm text-gray-600">
+                View calculated KPIs including CPL, qualification rates, and more
+              </p>
             </div>
           </div>
         </div>

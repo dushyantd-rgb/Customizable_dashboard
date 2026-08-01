@@ -4,7 +4,15 @@ import logging
 from uuid import UUID
 
 from app.integrations.meta.client import MetaApiError, MetaGraphClient
-from app.integrations.meta.models import MetaConnectionConfig, MetaSyncRequest, MetaSyncResult
+from app.integrations.meta.models import (
+    MetaAdSetSummary,
+    MetaAdSummary,
+    MetaCampaignSummary,
+    MetaConnectionConfig,
+    MetaInsightRow,
+    MetaSyncRequest,
+    MetaSyncResult,
+)
 from app.integrations.meta.repository import (
     MetaConfigurationError,
     MetaConnectionRequiredError,
@@ -121,8 +129,12 @@ class MetaSyncService:
                 meta_account_id=meta_account_id,
                 ads=ads,
             )
+            campaign_ids = {campaign.external_campaign_id for campaign in campaigns}
+            ad_set_ids = {ad_set.external_ad_set_id for ad_set in ad_sets}
+            ad_ids = {ad.external_ad_id for ad in ads}
             insights_read = 0
             insights_written = 0
+            warning_count = 0
             if request.include_insights:
                 for level in ("campaign", "adset", "ad"):
                     insights = await self._meta_client.get_insights(
@@ -131,6 +143,22 @@ class MetaSyncService:
                         date_to=request.date_to.isoformat(),
                         level=level,
                     )
+                    (
+                        historical_campaigns,
+                        historical_ad_sets,
+                        historical_ads,
+                    ) = await self._upsert_historical_insight_entities(
+                        client_id=client_id,
+                        meta_account_id=meta_account_id,
+                        insights=insights,
+                        campaign_ids=campaign_ids,
+                        ad_set_ids=ad_set_ids,
+                        ad_ids=ad_ids,
+                    )
+                    campaigns_written += historical_campaigns
+                    ad_sets_written += historical_ad_sets
+                    ads_written += historical_ads
+                    warning_count += historical_campaigns + historical_ad_sets + historical_ads
                     insights_read += len(insights)
                     insights_written += await self._repository.upsert_insights(
                         client_id=client_id,
@@ -147,6 +175,7 @@ class MetaSyncService:
                 status="succeeded",
                 rows_read=rows_read,
                 rows_written=rows_written,
+                warning_count=warning_count,
             )
             return MetaSyncResult(
                 sync_run_id=str(sync_run_id),
@@ -155,7 +184,7 @@ class MetaSyncService:
                 status="succeeded",
                 rows_read=rows_read,
                 rows_written=rows_written,
-                warning_count=0,
+                warning_count=warning_count,
                 campaigns_synced=campaigns_written,
                 ad_sets_synced=ad_sets_written,
                 ads_synced=ads_written,
@@ -173,3 +202,59 @@ class MetaSyncService:
                 error_summary="Meta sync failed safely",
             )
             raise
+
+    async def _upsert_historical_insight_entities(
+        self,
+        *,
+        client_id: UUID,
+        meta_account_id: UUID,
+        insights: list[MetaInsightRow],
+        campaign_ids: set[str],
+        ad_set_ids: set[str],
+        ad_ids: set[str],
+    ) -> tuple[int, int, int]:
+        """Persist ID-only entities that Meta retains in insights after entity deletion."""
+        campaigns = {
+            insight.campaign_id: MetaCampaignSummary(external_campaign_id=insight.campaign_id)
+            for insight in insights
+            if insight.campaign_id and insight.campaign_id not in campaign_ids
+        }
+        campaigns_written = await self._repository.upsert_campaigns(
+            client_id=client_id,
+            meta_account_id=meta_account_id,
+            campaigns=list(campaigns.values()),
+        )
+        campaign_ids.update(campaigns)
+
+        ad_sets = {
+            insight.adset_id: MetaAdSetSummary(
+                external_ad_set_id=insight.adset_id,
+                external_campaign_id=insight.campaign_id,
+            )
+            for insight in insights
+            if insight.adset_id
+            and insight.adset_id not in ad_set_ids
+            and insight.campaign_id in campaign_ids
+        }
+        ad_sets_written = await self._repository.upsert_ad_sets(
+            client_id=client_id,
+            meta_account_id=meta_account_id,
+            ad_sets=list(ad_sets.values()),
+        )
+        ad_set_ids.update(ad_sets)
+
+        ads = {
+            insight.ad_id: MetaAdSummary(
+                external_ad_id=insight.ad_id,
+                external_ad_set_id=insight.adset_id,
+            )
+            for insight in insights
+            if insight.ad_id and insight.ad_id not in ad_ids and insight.adset_id in ad_set_ids
+        }
+        ads_written = await self._repository.upsert_ads(
+            client_id=client_id,
+            meta_account_id=meta_account_id,
+            ads=list(ads.values()),
+        )
+        ad_ids.update(ads)
+        return campaigns_written, ad_sets_written, ads_written

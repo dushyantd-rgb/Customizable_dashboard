@@ -3,14 +3,32 @@
   "compilerOptions": {
     "incremental": true,
     "jsx": "preserve",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "plugins": [{ "name": "next" }],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-runtime/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

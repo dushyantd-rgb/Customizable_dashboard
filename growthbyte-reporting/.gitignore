@@ -26,6 +26,7 @@ pnpm-debug.log*
 
 # Next.js and frontend builds
 .next/
+.next-runtime/
 *.tsbuildinfo
 out/
 dist/
@@ -73,6 +74,10 @@ desktop.ini
 *.sqlite
 *.sqlite3
 .supabase/
+
+# Local client source data and generated reports
+superk_purchase_qcom.json
+report-exports/
 
 # Local tooling
 .tooling/

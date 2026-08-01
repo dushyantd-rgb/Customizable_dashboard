@@ -24,6 +24,7 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_SCOPES = (
     "https://www.googleapis.com/auth/spreadsheets.readonly",
     "https://www.googleapis.com/auth/drive.metadata.readonly",
+    "https://www.googleapis.com/auth/webmasters.readonly",
 )
 STATE_MAX_AGE_SECONDS = 600
 

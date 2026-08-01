@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@growthbyte/config": "workspace:*",
+    "@growthbyte/report-schema": "workspace:*",
     "@growthbyte/shared-types": "workspace:*",
     "@growthbyte/ui": "workspace:*",
     "@hookform/resolvers": "^5.5.7",

@@ -70,11 +70,12 @@ class MetaInsightRow(BaseModel):
     impressions: str = "0"
     reach: str = "0"
     clicks: str = "0"
+    inline_link_clicks: str = "0"
     spend: str = "0"
     actions: list[dict[str, Any]] = Field(default_factory=list)
     action_values: list[dict[str, Any]] = Field(default_factory=list)
 
-    @field_validator("impressions", "reach", "clicks", mode="before")
+    @field_validator("impressions", "reach", "clicks", "inline_link_clicks", mode="before")
     @classmethod
     def normalize_string_counts(cls, value: str | int | None) -> str:
         if value is None:
@@ -107,6 +108,7 @@ class MetaInsightRequest(BaseModel):
             "impressions",
             "reach",
             "clicks",
+            "inline_link_clicks",
             "spend",
             "actions",
             "action_values",

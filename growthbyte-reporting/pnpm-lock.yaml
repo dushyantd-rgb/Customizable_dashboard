@@ -39,6 +39,9 @@ importers:
       '@growthbyte/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@growthbyte/report-schema':
+        specifier: workspace:*
+        version: link:../../packages/report-schema
       '@growthbyte/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

@@ -79,6 +79,7 @@ class GoogleSheetsService:
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
             expires_at=tokens.expires_at,
+            scope=tokens.scope,
         )
         return client_id
 
@@ -284,6 +285,7 @@ class GoogleSheetsService:
                 connection_id=connection_id,
                 access_token=refreshed.access_token,
                 expires_at=refreshed.expires_at,
+                scope=refreshed.scope,
             )
             return refreshed.access_token.get_secret_value()
         return tokens["access_token"].get_secret_value()

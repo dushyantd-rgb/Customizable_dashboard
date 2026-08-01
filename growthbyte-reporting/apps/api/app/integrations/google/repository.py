@@ -89,6 +89,7 @@ class GoogleSheetsRepository:
         access_token: SecretStr,
         refresh_token: SecretStr | None,
         expires_at: datetime,
+        scope: str | None = None,
     ) -> None:
         access_ciphertext = encrypt_token(access_token.get_secret_value(), self._encryption_key)
         refresh_ciphertext = (
@@ -105,6 +106,7 @@ class GoogleSheetsRepository:
                     "access_ciphertext": access_ciphertext,
                     "refresh_ciphertext": refresh_ciphertext,
                     "expires_at": expires_at.isoformat(),
+                    "granted_scopes": _scope_list(scope),
                 },
             ),
             on_conflict=("client_id",),
@@ -120,7 +122,12 @@ class GoogleSheetsRepository:
     ) -> dict[str, Any] | None:
         rows = await self._client.select(
             table="google_oauth_credentials",
-            columns=("access_ciphertext", "refresh_ciphertext", "expires_at"),
+            columns=(
+                "access_ciphertext",
+                "refresh_ciphertext",
+                "expires_at",
+                "granted_scopes",
+            ),
             filters={
                 "client_id": str(client_id),
                 "integration_connection_id": str(connection_id),
@@ -140,6 +147,7 @@ class GoogleSheetsRepository:
                 else None
             ),
             "expires_at": _as_datetime(row["expires_at"]),
+            "granted_scopes": tuple(str(item) for item in row.get("granted_scopes") or []),
         }
 
     async def update_access_token(
@@ -149,15 +157,19 @@ class GoogleSheetsRepository:
         connection_id: UUID,
         access_token: SecretStr,
         expires_at: datetime,
+        scope: str | None = None,
     ) -> None:
+        values: dict[str, Any] = {
+            "access_ciphertext": encrypt_token(
+                access_token.get_secret_value(), self._encryption_key
+            ),
+            "expires_at": expires_at.isoformat(),
+        }
+        if scope:
+            values["granted_scopes"] = _scope_list(scope)
         rows = await self._client.update(
             table="google_oauth_credentials",
-            values={
-                "access_ciphertext": encrypt_token(
-                    access_token.get_secret_value(), self._encryption_key
-                ),
-                "expires_at": expires_at.isoformat(),
-            },
+            values=values,
             filters={
                 "client_id": str(client_id),
                 "integration_connection_id": str(connection_id),
@@ -482,3 +494,9 @@ def _normalize_status(value: str) -> str:
     if not normalized:
         raise GoogleConfigurationError
     return normalized
+
+
+def _scope_list(scope: str | None) -> list[str]:
+    if not scope:
+        return []
+    return sorted({item for item in scope.split() if item})

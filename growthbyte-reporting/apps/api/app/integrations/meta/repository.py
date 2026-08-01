@@ -368,7 +368,8 @@ class MetaRepository:
         client_id: UUID,
         limit: int = 10,
     ) -> list[dict[str, Any]]:
-        return await self._client.select(
+        normalized_limit = min(max(limit, 1), 100)
+        rows = await self._client.select(
             table="sync_runs",
             columns=(
                 "id",
@@ -384,8 +385,13 @@ class MetaRepository:
                 "created_at",
             ),
             filters={"client_id": str(client_id), "source_type": "meta"},
-            limit=min(max(limit, 1), 100),
+            limit=100,
         )
+        return sorted(
+            rows,
+            key=lambda row: str(row.get("started_at") or row.get("created_at") or ""),
+            reverse=True,
+        )[:normalized_limit]
 
     async def _find_one(
         self,

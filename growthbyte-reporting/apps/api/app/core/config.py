@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -248,6 +249,157 @@ class GoogleSettings(BaseSettings):
         return normalized
 
 
+class SuperKSettings(BaseSettings):
+    """Backend-only identity and source lock for the SuperK Franchise prototype."""
+
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    client_id: UUID | None = Field(
+        default=None,
+        validation_alias="SUPERK_CLIENT_ID",
+    )
+    franchise_meta_account_id: str | None = Field(
+        default=None,
+        validation_alias="SUPERK_FRANCHISE_META_ACCOUNT_ID",
+    )
+    gsc_site_url: str | None = Field(
+        default=None,
+        validation_alias="SUPERK_GSC_SITE_URL",
+    )
+    lead_json_path: Path = Field(
+        default=PROJECT_ROOT / "superk_purchase_qcom.json",
+        validation_alias="SUPERK_LEAD_JSON_PATH",
+    )
+
+    @field_validator("client_id", mode="before")
+    @classmethod
+    def normalize_client_id(cls, value: object) -> object | None:
+        if value is None or _is_placeholder(str(value)):
+            return None
+        try:
+            return UUID(str(value).strip())
+        except (ValueError, TypeError, AttributeError):
+            return None
+
+    @field_validator("franchise_meta_account_id", mode="before")
+    @classmethod
+    def normalize_meta_account_id(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        normalized = str(value).strip()
+        if _is_placeholder(normalized):
+            return None
+        if normalized.startswith("act_"):
+            normalized = normalized[4:]
+        return normalized or None
+
+    @field_validator("gsc_site_url", mode="before")
+    @classmethod
+    def normalize_gsc_site_url(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        normalized = str(value).strip()
+        if _is_placeholder(normalized):
+            return None
+        if normalized.startswith("sc-domain:"):
+            domain = normalized.removeprefix("sc-domain:").strip().lower()
+            return f"sc-domain:{domain}" if domain else None
+        parsed = urlsplit(normalized)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            return None
+        return normalized
+
+    @field_validator("lead_json_path", mode="before")
+    @classmethod
+    def normalize_lead_json_path(cls, value: object) -> Path:
+        path = Path(str(value)).expanduser() if value is not None else PROJECT_ROOT
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path.resolve()
+
+    @property
+    def configured(self) -> bool:
+        return (
+            self.client_id is not None
+            and self.franchise_meta_account_id is not None
+            and self.gsc_site_url is not None
+        )
+
+
+class GLMSettings(BaseSettings):
+    """Secret-safe configuration for the Anthropic-compatible GLM gateway."""
+
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    base_url: str | None = Field(
+        default=None,
+        validation_alias="ANTHROPIC_BASE_URL",
+        exclude=True,
+        repr=False,
+    )
+    auth_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="ANTHROPIC_AUTH_TOKEN",
+        exclude=True,
+        repr=False,
+    )
+    default_opus_model: str = Field(
+        default="claude-opus-5",
+        validation_alias="ANTHROPIC_DEFAULT_OPUS_MODEL",
+    )
+    default_sonnet_model: str = Field(
+        default="claude-sonnet-5",
+        validation_alias="ANTHROPIC_DEFAULT_SONNET_MODEL",
+    )
+    default_haiku_model: str = Field(
+        default="claude-haiku-4-5",
+        validation_alias="ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    )
+    timeout_seconds: float = Field(default=60.0, ge=10.0, le=300.0)
+
+    @field_validator("base_url", mode="before")
+    @classmethod
+    def normalize_base_url(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        normalized = str(value).strip()
+        if _is_placeholder(normalized):
+            return None
+        parsed = urlsplit(normalized)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            return None
+        return normalized.rstrip("/")
+
+    @field_validator("auth_token", mode="before")
+    @classmethod
+    def normalize_auth_token(cls, value: object) -> object | None:
+        return _normalize_optional_secret(value)
+
+    @property
+    def configured(self) -> bool:
+        return self.base_url is not None and self.auth_token is not None
+
+
 class Settings(BaseSettings):
     """Application settings with isolated backend-only credential groups."""
 
@@ -272,6 +424,8 @@ class Settings(BaseSettings):
     )
     meta: MetaSettings = Field(default_factory=MetaSettings)
     google: GoogleSettings = Field(default_factory=GoogleSettings)
+    superk: SuperKSettings = Field(default_factory=SuperKSettings)
+    glm: GLMSettings = Field(default_factory=GLMSettings)
 
     @field_validator("token_encryption_key", mode="before")
     @classmethod
