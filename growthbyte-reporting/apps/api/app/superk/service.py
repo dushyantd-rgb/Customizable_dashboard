@@ -108,7 +108,7 @@ class SuperKReportingService:
             warnings=tuple(warnings),
         )
 
-    async def generate(self, *, client_id: UUID) -> SuperKGenerateResponse:
+    async def generate(self, *, client_id: UUID, vertical: str = "b2b") -> SuperKGenerateResponse:
         client = await self._require_client(client_id)
         report_month = latest_completed_report_month(
             str(client.get("reporting_timezone") or "Asia/Kolkata"),

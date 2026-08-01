@@ -1,0 +1,56 @@
+[
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Clicks up 21.5% vs the prior 28 days",
+    "payload": "{\"clicks\": 4518, \"delta_pct\": 21.5}",
+    "dedup_key": "clicks_up:2026-06-15",
+    "occurred_at": "2026-06-15T21:30:18.794639+00:00",
+    "created_at": "2026-06-15T21:30:18.794639+00:00"
+  },
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Clicks up 22.9% vs the prior 28 days",
+    "payload": "{\"clicks\": 4555, \"delta_pct\": 22.9}",
+    "dedup_key": "clicks_up:2026-06-14",
+    "occurred_at": "2026-06-14T21:30:18.807717+00:00",
+    "created_at": "2026-06-14T21:30:18.807717+00:00"
+  },
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Clicks up 22.8% vs the prior 28 days",
+    "payload": "{\"clicks\": 4570, \"delta_pct\": 22.8}",
+    "dedup_key": "clicks_up:2026-06-13",
+    "occurred_at": "2026-06-13T21:30:20.717686+00:00",
+    "created_at": "2026-06-13T21:30:20.717686+00:00"
+  },
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Clicks up 22.4% vs the prior 28 days",
+    "payload": "{\"clicks\": 4590, \"delta_pct\": 22.4}",
+    "dedup_key": "clicks_up:2026-06-12",
+    "occurred_at": "2026-06-12T21:30:22.493264+00:00",
+    "created_at": "2026-06-12T21:30:22.493264+00:00"
+  },
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Passed 4,000 clicks in the last 28 days",
+    "payload": "{\"clicks\": 4011, \"milestone\": 4000}",
+    "dedup_key": "click_milestone:4000",
+    "occurred_at": "2026-06-11T16:59:17.552524+00:00",
+    "created_at": "2026-06-11T16:59:17.552524+00:00"
+  },
+  {
+    "event_type": "click_milestone",
+    "source": "batch",
+    "title": "Clicks up 21.6% vs the prior 28 days",
+    "payload": "{\"clicks\": 4597, \"delta_pct\": 21.6}",
+    "dedup_key": "clicks_up:2026-06-11",
+    "occurred_at": "2026-06-11T16:59:17.446379+00:00",
+    "created_at": "2026-06-11T16:59:17.446379+00:00"
+  }
+]

@@ -267,9 +267,9 @@ export const api = {
     apiRequest<unknown>(
       `/metrics/snapshots/${encodeURIComponent(snapshotId)}?client_id=${encodeURIComponent(clientId)}`,
     ),
-  generateSuperKFranchiseReport: (clientId: string) =>
+  generateSuperKFranchiseReport: (clientId: string, vertical: string = "b2b") =>
     apiRequest<SuperKFranchiseReportResponse>(
       `${clientPath(clientId)}/superk-franchise-report/generate`,
-      { method: "POST" },
+      { method: "POST", body: JSON.stringify({ vertical }) },
     ),
 };

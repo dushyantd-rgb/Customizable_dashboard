@@ -275,6 +275,14 @@ class SuperKSettings(BaseSettings):
         default=PROJECT_ROOT / "superk_purchase_qcom.json",
         validation_alias="SUPERK_LEAD_JSON_PATH",
     )
+    seo_data_path: Path = Field(
+        default=PROJECT_ROOT / "superk_seo_data.json",
+        validation_alias="SUPERK_SEO_DATA_PATH",
+    )
+    seo_cache_path: Path = Field(
+        default=PROJECT_ROOT / "superk_seo_cache",
+        validation_alias="SUPERK_SEO_CACHE_PATH",
+    )
 
     @field_validator("client_id", mode="before")
     @classmethod
@@ -319,9 +327,9 @@ class SuperKSettings(BaseSettings):
             return None
         return normalized
 
-    @field_validator("lead_json_path", mode="before")
+    @field_validator("lead_json_path", "seo_data_path", "seo_cache_path", mode="before")
     @classmethod
-    def normalize_lead_json_path(cls, value: object) -> Path:
+    def normalize_path(cls, value: object) -> Path:
         path = Path(str(value)).expanduser() if value is not None else PROJECT_ROOT
         if not path.is_absolute():
             path = PROJECT_ROOT / path
